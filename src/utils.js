@@ -1,3 +1,163 @@
+var S_FLOAT = 4;
+
+//Tilemap Manager
+function Tilemap()
+{
+	//Tilemap Variables
+	this.w; //Width Of Tilemap In Tiles
+	this.h; //Height Of Tilemap In Tiles
+	this.s; //Tilemap Size. Width * Height
+
+	this.tileSize; //Relative Size Of A Single Tile
+	this.tileSizePx; //Tile Size In Pixels
+	this.sprsSizePx; //Sprite Sheet Size In Pixels
+
+	this.lightW; //Light Map Tile Width
+	this.lightH; //Light Map Tile Height
+
+	this.map; //Tilemap Data
+
+	this.spriteSheet; //Tiles Textures Sprite Sheet
+	this.spriteCoord = []; //Coordinate Of Tilemap In Sprite Sheet
+
+	//WebGL Variables
+	this.vbo; //WebGL Vertex Buffer Object
+	this.ibo; //WebGL Index Buffer Object
+
+	this.vboData = []; //Stores Vertex Buffer Object Data
+	this.iboData = []; //Stores Index Buffer Object Data
+
+	//Gets Tilemap Data From File. PARAMETERS: Tilemap JSON, SpriteSheet
+	this.getTilemapData = function(mapRes, sprRes, tSize)
+	{
+		//Get Tilemap Tiles, Width, Height
+		var txtJSON = JSON.parse(mapRes.txt); //Translate JSON Text To Object
+		this.map = txtJSON.layers[0].data;
+
+		this.w = txtJSON.layers[0].width;
+		this.h = txtJSON.layers[0].height;
+
+		this.tileSizePx = txtJSON.tilesets[0].tilewidth;
+		this.sprsSizePx = txtJSON.tilesets[0].imagewidth;
+
+		//Get Spritesheet
+		this.spriteSheet = new SpriteSheet();
+		this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
+
+		//Calculate Tilemap Size
+		this.s = this.w * this.h;
+
+		this.tileSize = tSize;
+
+		this.lightW = 1/this.w;
+		this.lightH = 1/this.h;
+	}
+
+	//Initializes Tilemap For Use. PARAMETERS: 
+	this.initTilemap =  function (gl)
+	{
+		this.VBOIdentity();
+		this.IBOIdentity();
+
+		this.initVBO(gl);
+		this.initIBO(gl);
+	}
+
+	//Initializes Vertex Buffer Object. PARAMETERS: WebGL Context
+	this.initVBO = function (gl)
+	{
+		//Create VBO for TileMap
+		this.vbo = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+		gl.bufferData(gl.ARRAY_BUFFER, S_FLOAT*this.vboData.length*this.s, gl.STATIC_DRAW);
+
+		for (var y=(this.h-1); y>=0; y--)
+		{
+			//Set VBO Data X Identity
+			this.vboData[0] = -this.tileSize;
+			this.vboData[6] = 0;
+			this.vboData[12] = 0;
+			this.vboData[18] = -this.tileSize;
+
+			//Set VBO Lightmap Data U Identity
+			this.vboData[4] = 0; //-this.lightW; //TO-DO. Add Lightmap
+			this.vboData[10] = 0;
+			this.vboData[16] = 0;
+			this.vboData[22] = 0; //-this.lightW;
+
+			//Write X Tilemap Data
+			for (var x=0; x<this.w; x++)
+			{
+				this.spriteCoord = this.spriteSheet.getUVArr(this.map[y*this.w+x]);
+
+				for (var i=0; i<this.vboData.length; i+=6)
+				{
+					this.vboData[i] += this.tileSize;
+
+					this.vboData[i+2] = this.spriteCoord[(i/3)];
+					this.vboData[i+3] = this.spriteCoord[(i/3)+1];
+
+					this.vboData[i+4] += 0; //this.lightW; //TO-DO. Lightmap
+				}
+
+				gl.bufferSubData(gl.ARRAY_BUFFER, S_FLOAT*this.vboData.length*(y*this.w+x), new Float32Array(this.vboData));
+			}
+
+			//Write Y Tilemap Data
+			for (var i=0; i<this.vboData.length; i+=6)
+			{
+				this.vboData[i+1] += this.tileSize;
+				this.vboData[i+5] += 0; //this.lightH; //To-Do. Lightmap
+			}
+		}
+	}
+
+	//Initializes Index Buffer Object. PARAMETERS: WebGL Context
+	this.initIBO = function (gl)
+	{
+		this.ibo = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, S_FLOAT*6*this.s, gl.STATIC_DRAW);
+
+		for (var a=0; a<this.s; a++)
+		{
+			for (var i=0; i<this.iboData.length; i++)
+			{
+				this.iboData[i] += 4;	
+			}
+
+			gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, S_FLOAT*this.iboData.length*a, new Uint16Array(this.iboData));
+		}
+	}
+
+	//Puts VBO Array Into Default State
+	this.VBOIdentity = function()
+	{
+		this.vboData = [
+			0,              this.tileSize,  this.spriteCoord[0], this.spriteCoord[1],  0,           this.lightH,
+			this.tileSize,  this.tileSize,  this.spriteCoord[2], this.spriteCoord[3],  this.lightW, this.lightH,
+			this.tileSize,  0,              this.spriteCoord[4], this.spriteCoord[5],  this.lightW, 0,
+			0,              0,              this.spriteCoord[6], this.spriteCoord[7],  0,           0
+		];
+	}
+
+	//Puts IBO Array Into Default State
+	this.IBOIdentity = function()
+	{
+		this.iboData = [
+			-4, -3, -2,
+			-2, -1, -4
+		];
+	}
+
+	//Renders Tilemap VBO On Screen
+	this.drawTilemap = function()
+	{
+
+	}
+}
+
+//Texture Wraper Class
 function Texture()
 {
 	this.texture; //Stores WebGL Texture
@@ -8,6 +168,7 @@ function Texture()
 		this.texture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, this.texture);
 
+
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -16,11 +177,13 @@ function Texture()
 
 		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src.img);
 
+		//gl.generateMipmap(gl.TEXTURE_2D);
+
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
 }
 
-//Manages WebGL Shaders
+//WebGL Shaders Wrapper Class
 function Shader()
 {
 	this.vertex; //Stores GL Vertex Shader

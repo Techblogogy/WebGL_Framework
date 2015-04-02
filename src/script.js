@@ -21,105 +21,68 @@ var res = {
 
 	lmp: {
 		type: "image",
-		src: "./res/textures/light.png"
+		src: "./res/textures/lightSmp.png"
+	},
+
+	tMap: {
+		type: "text",
+		src: "./res/tilemaps/Level1.json"
+	},
+
+	bmb: {
+		type: "image",
+		src: "./res/textures/BMB/GameSheet.png"
 	}
 };
 
 var rm = new ResourceManager(res);
 var ts = new SpriteSheet();
 
+var lngh;
+var gl;
+
+var viewMat;
+var mView; //Model Matrix
+var modelUn; //Model Matix Uniform
+var viewUn;
+
+var as;
+
+var newVec = vec3.create(); //Current Position Vector
+var oldVec = vec3.create(); //Last Position Vector
+
+var tVec = vec3.create(); //Translate Vector
+
+var sTime; //Start Time
+
+var tmp;
+
+//View Matrix Stuff
+
+var fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
+
+var vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
+
+var lPos = vec3.create(); //LookAt Vector
+vec3.add(lPos, vPos, fVec); //Calculate LookAt Vecotr
+
+var upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
+
 window.onload = function () {
 	rm.getResources(IntiGL);
 }
 
 function IntiGL() {
-	var S_FLOAT = 4;
-
 	var canvas = document.getElementById('glCan');
 		canvas.width = 1024; //window.innerWidth;
 		canvas.height = 576; //window.innerHeight;
-	var gl = canvas.getContext("experimental-webgl", {antialias:false});
+	gl = canvas.getContext("experimental-webgl", {antialias:true});
 
-	var as = (canvas.width/canvas.height); //Screen Aspect Ration
+	as = (canvas.width/canvas.height); //Screen Aspect Ration
 
-	ts.createSheet(256, 64); //Create Sprite Sheet
-	var cc = ts.getUVArr(1); //Get Coordinate From Id
-
-	var tStep = 2/4; //Realtive Tile Size
-
-	var tW = 4; //Tile Map Height
-	var tH = 4; //Tile Map Width
-	var tMap = [ //Tile Map Data
-		1,2,1,2,
-		2,3,2,3,
-		3,4,3,4,
-		4,5,4,5
-	];
-
-	//Init VBO Identity
-	//Main Test VBO. Stores Vetex Positions, Sprite Sheet Positions
-	var vboDt = [
-	//	 X       Y      U      V
-		0.0,   tStep,  cc[0], cc[1], 
-		tStep, tStep,  cc[2], cc[3],
-		tStep, 0.0,    cc[4], cc[5],
-		0.0,   0.0,    cc[6], cc[7]
-	];
-
-	var vbo = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-	gl.bufferData(gl.ARRAY_BUFFER, S_FLOAT*16*tW*tH, gl.STATIC_DRAW);
-
-	gl.bufferSubData(gl.ARRAY_BUFFER, 0, new Float32Array(vboDt));
-
-	for (var y=tH-1; y>=0; y--)
-	{
-	 	//Reset X
-		vboDt[0] = -tStep; //0.0;
-		vboDt[4] = 0;
-		vboDt[8] = 0;
-		vboDt[12] = -tStep;
-
-		for (var x=0; x<tW; x++)
-		{
-			cc = ts.getUVArr(tMap[y*tW+x]); //Get Tile Id
-
-			for (var i=0; i<vboDt.length; i+=4)
-			{
-				vboDt[i] += tStep;
-
-				vboDt[i+2] = cc[(i/2)];
-				vboDt[i+3] = cc[(i/2)+1];
-			}
-			//console.log(vboDt);
-
-			gl.bufferSubData(gl.ARRAY_BUFFER, S_FLOAT*16*(y*tW+x), new Float32Array(vboDt));
-		}
-
-		for (var i=0; i<vboDt.length; i+=4)
-	 	{
-			vboDt[i+1] += tStep;//*x;
-	 	}
-	}
-
-	//Init Index Buffer Object
-	var iboDt = [];
-
-	//Generate IBO
-	for (var i=0, a=0; i<6*tW*tH; i+=6, a+=4)
-	{
-		iboDt[i] = a;
-		iboDt[i+1] = a+1;
-		iboDt[i+2] = a+2;
-
-		iboDt[i+3] = a+2;
-		iboDt[i+4] = a+3;
-		iboDt[i+5] = a;
-	}
-
-	var ibo = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(iboDt), gl.STATIC_DRAW);
+	tmp = new Tilemap();
+	tmp.getTilemapData(res.tMap, res.bmb, 1/4);
+	tmp.initTilemap(gl);
 
 	//Create Shader
 	var sth = new Shader();
@@ -132,31 +95,34 @@ function IntiGL() {
 	//Set Position Attribute
 	var vertexPA = gl.getAttribLocation(sth.program, "inpCr");
 	gl.enableVertexAttribArray(vertexPA);
-	gl.vertexAttribPointer(vertexPA, 2, gl.FLOAT, false, 4*S_FLOAT, 0);
+	gl.vertexAttribPointer(vertexPA, 2, gl.FLOAT, false, 6*S_FLOAT, 0);
 
 	//Set Color Attribute
 	var texturePA = gl.getAttribLocation(sth.program, "texPs");
 	gl.enableVertexAttribArray(texturePA);
-	gl.vertexAttribPointer(texturePA, 2, gl.FLOAT, false, 4*S_FLOAT, 2*S_FLOAT);
+	gl.vertexAttribPointer(texturePA, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT);
 
-	gl.uniform1i(gl.getUniformLocation(sth.program, "tex"), 0); //Set Tex Sampler To Texture Unit 0
-	gl.uniform1i(gl.getUniformLocation(sth.program, "light"), 1); //Set Light Sampler To Texture Unit 1
+	var lightPA = gl.getAttribLocation(sth.program, "lmpPs");
+	gl.enableVertexAttribArray(lightPA);
+	gl.vertexAttribPointer(lightPA, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT);
+
+	//Create Lightmap Texture
+	var tx = new Texture();
+	tx.makeTexture(gl, gl.NEAREST, res.bmb);
 
 	//Create Sprite Sheet Texture
 	var lt = new Texture();
 	lt.makeTexture(gl, gl.NEAREST, res.lmp);
 
-	//Create Lightmap Texture
-	var tx = new Texture();
-	tx.makeTexture(gl, gl.NEAREST, res.pk);
-
 	//Bind Sprite Sheet To Texture Unit 0
 	gl.activeTexture(gl.TEXTURE0);
 	gl.bindTexture(gl.TEXTURE_2D, tx.texture);
+	gl.uniform1i(gl.getUniformLocation(sth.program, "tex"), 0); //Set Tex Sampler To Texture Unit 0
 
 	//Bind Lightmap To Texture Unit 1
 	gl.activeTexture(gl.TEXTURE1);
 	gl.bindTexture(gl.TEXTURE_2D, lt.texture);
+	gl.uniform1i(gl.getUniformLocation(sth.program, "light"), 1); //Set Light Sampler To Texture Unit 1
 
 	//Setup Matrixes
 	var proMat = mat4.create(); //Projection Matrix
@@ -166,15 +132,23 @@ function IntiGL() {
 	var projUn = gl.getUniformLocation(sth.program, "proj"); //Projection Shader Uniform
 	gl.uniformMatrix4fv(projUn, false, proMat); //Set Projection Unifrom
 
-	var viewMat = mat4.create(); //Camera Matrix
-	var fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
+	modelUn = gl.getUniformLocation(sth.program, "model");
 
-	var vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
+	//var tVec = vec3.fromValues(0.1,0,0);
+	mView = mat4.create(); //Create Model View Matrix
+	//mat4.translate(mView, mView, tVec);
+	//mat4.translate(mView, mView, tVec);
 
-	var lPos = vec3.create(); //LookAt Vector
+	gl.uniformMatrix4fv(modelUn, false, mView);
+
+	viewMat = mat4.create(); //Camera Matrix
+
+	fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
+	vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
+	lPos = vec3.create(); //LookAt Vector
 	vec3.add(lPos, vPos, fVec); //Calculate LookAt Vecotr
 
-	var upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
+	upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
 
 	mat4.lookAt(
 			viewMat,
@@ -184,14 +158,64 @@ function IntiGL() {
 			upPos
 		);
 
-	var viewUn = gl.getUniformLocation(sth.program, "view");
+	viewUn = gl.getUniformLocation(sth.program, "view");
 	gl.uniformMatrix4fv(viewUn, false, viewMat);
 
 	//Draw Stuff
 	gl.clearColor(0.0,0.0,0.0,1.0); //Set Clear Color
-
 	gl.viewport(0,0,canvas.width,canvas.height); //Set Rendering Target
-	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
-	gl.drawElements(gl.TRIANGLES, iboDt.length, gl.UNSIGNED_SHORT, 0); //Draw Elements On Screen
+	sTime = new Date().getTime();
+
+	window.addEventListener("keydown", function(e) {
+		//vPos[0] += 1/8;
+		kDwn = true;
+	}, false);
+
+	window.addEventListener("keyup", function(e) {
+		// vPos[0] += 1/8;
+		kDwn = false;
+	}, false);
+
+	window.requestAnimationFrame(Tick);
+}
+
+var kDwn = false;
+
+function Tick(time)
+{
+	Update();
+	Render();
+
+	window.requestAnimationFrame(Tick);
+}
+
+function GetTime()
+{
+
+}
+
+function Update()
+{
+	var time = (new Date().getTime()) - sTime;
+	//vPos[0] = 0.5 * Math.abs(Math.cos(time * 2 * Math.PI / 10000));
+	if (kDwn) vPos[0] += (1/4)/36;
+
+	vec3.add(lPos, vPos, fVec);
+	
+	mat4.lookAt(
+		viewMat,
+
+		vPos,
+		lPos,
+		upPos
+	);
+
+	gl.uniformMatrix4fv(viewUn, false, viewMat);
+}
+
+function Render()
+{
+	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
+	gl.drawElements(gl.TRIANGLES, tmp.s*6*2, gl.UNSIGNED_SHORT, 0); //Draw Elements On Screen
 }
