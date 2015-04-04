@@ -5,7 +5,7 @@ varying vec2 vTexPs;
 varying vec2 vLmpPs;
 
 uniform sampler2D tex; 
-uniform sampler2D light;
+// uniform sampler2D light;
 
 void main(void) 
 { 
