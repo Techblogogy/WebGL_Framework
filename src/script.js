@@ -52,23 +52,15 @@ var gl;
 var canvas;
 
 var viewMat;
-// var mView; //Model Matrix
-var modelUn; //Model Matix Uniform
-var viewUn;
+
+var projUn; //Projection Matrix Uniform Location
+var modelUn; //Model Matix Uniform Location
+var viewUn; //View Matrix Uniform Location
 
 var as;
 
-var newVec = vec3.create(); //Current Position Vector
-var oldVec = vec3.create(); //Last Position Vector
-
-var tVec = vec3.create(); //Translate Vector
-
-var sTime; //Start Time
-
 var tmp;
 var spr;
-
-var txOff;
 
 //View Matrix Stuff
 
@@ -92,6 +84,12 @@ var vbo, ibo;
 var sth, fboSth;
 
 var lt;
+
+var cTime = 0, 
+	lTime = 0, 
+	dTime = 0;
+
+var kDwn = false;
 
 function IntiGL() {
 	canvas = document.getElementById('glCan');
@@ -172,9 +170,15 @@ function IntiGL() {
 	//Set Render Program
 	gl.useProgram(sth.program);
 
+	//Get Attributes
 	sth.pushAttribute(gl, "inpCr"); //Vertex Position Attribute
 	sth.pushAttribute(gl, "texPs"); //Texture Position Attribute
 	sth.pushAttribute(gl, "lmpPs"); //Light Position Attribute
+
+	//Get Uniform Locations
+	sth.pushUniform(gl, "proj"); //Projection Uniform
+	sth.pushUniform(gl, "model"); //Model Unifrom
+	sth.pushUniform(gl, "view"); //Camera Uniform
 
 	//Bind Sprite Sheet To Texture Unit 0
 	gl.activeTexture(gl.TEXTURE0);
@@ -185,15 +189,7 @@ function IntiGL() {
 	var proMat = mat4.create(); //Projection Matrix
 	mat4.ortho(proMat, -as, as, -1, 1, 0.001, 100.0); //Create Orthogaphic
 
-	var projUn = gl.getUniformLocation(sth.program, "proj"); //Projection Shader Uniform
-	gl.uniformMatrix4fv(projUn, false, proMat); //Set Projection Unifrom
-
-	txOff = gl.getUniformLocation(sth.program, "lOff");
-
-	// mView = mat4.create(); //Create Model View Matrix
-
-	modelUn = gl.getUniformLocation(sth.program, "model");
-	// gl.uniformMatrix4fv(modelUn, false, mView);
+	gl.uniformMatrix4fv(sth.uniforms.proj, false, proMat); //Set Projection Unifrom
 
 	viewMat = mat4.create(); //Camera Matrix
 	fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
@@ -210,13 +206,9 @@ function IntiGL() {
 			upPos
 		);
 
-	viewUn = gl.getUniformLocation(sth.program, "view");
-	gl.uniformMatrix4fv(viewUn, false, viewMat);
+	gl.uniformMatrix4fv(sth.uniforms.view, false, viewMat);
 
-	//Draw Stuff
 	gl.clearColor(0.0,0.0,0.0,1.0); //Set Clear Color
-
-	sTime = new Date().getTime();
 
 	window.addEventListener("keydown", function(e) {
 		//vPos[0] += 1/8;
@@ -228,16 +220,12 @@ function IntiGL() {
 		kDwn = false;
 	}, false);
 
-	cTime = new Date().getTime();
-	dTime = cTime - lTime;
-	lTime = cTime;
+	GetTime();
 
 	sth.enableAttributes(gl);
 
 	window.requestAnimationFrame(Tick);
 }
-
-var kDwn = false;
 
 function Tick(time)
 {
@@ -249,27 +237,19 @@ function Tick(time)
 
 function GetTime()
 {
-
-}
-
-var cTime = 0, 
-	lTime = 0, 
-	dTime = 0;
-
-function Update()
-{
-	//var time = (new Date().getTime()) - sTime;
-	//vPos[0] = 0.5 * Math.abs(Math.cos(time * 2 * Math.PI / 10000));
-
 	cTime = new Date().getTime();
 	dTime = cTime - lTime;
 	lTime = cTime;
+}
+
+function Update()
+{
+	GetTime();
 
 	if (kDwn) {
 		var t = (1/4)/36;
 
 		vPos[0] += t;
-		// gl.uniform1f(txOff, (vPos[0]-as)/as);
 		mat4.translate(spr.modelMatrix,spr.modelMatrix, [t/as,0,0]);
 	}
 
@@ -283,7 +263,7 @@ function Update()
 		upPos
 	);
 
-	gl.uniformMatrix4fv(viewUn, false, viewMat);
+	gl.uniformMatrix4fv(sth.uniforms.view, false, viewMat);
 }
 
 function Render()
@@ -293,7 +273,7 @@ function Render()
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
 	//Draw World
-	tmp.setBuffers(gl, modelUn);
+	tmp.setBuffers(gl, sth.uniforms.model);
 
 	gl.vertexAttribPointer(sth.attirbutes.inpCr, 2, gl.FLOAT, false, 6*S_FLOAT, 0); //Set Vertex Position
 	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position
@@ -303,7 +283,7 @@ function Render()
 
 	tmp.drawTilemap(); //World Draw Calls
 
-	spr.setBuffers(gl, modelUn); //Set Attributes 
+	spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
 
 	gl.vertexAttribPointer(sth.attirbutes.inpCr, 2, gl.FLOAT, false, 6*S_FLOAT, 0); //Set Vertex Position
 	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position

@@ -1,5 +1,16 @@
 var S_FLOAT = 4;
 
+//Camera Class
+function Camera() 
+{
+	this.viewMatrix; //Camera View Matrix
+	this.projMatrix; //Projection Matrix
+
+	this.initCamera = function () {
+
+	}
+}
+
 //Framebuffer Wrapper Class
 function Framebuffer() 
 {
@@ -335,6 +346,7 @@ function Shader()
 	this.program; //Stores GL Shader Program
 
 	this.attirbutes = {}; //Stores Shader Attributes Location
+	this.uniforms = {};
 
 	//Creates Shader. PARAMETERS: WebGL Context, Shader Type, Shader Source Object
 	this.setShader = function(gl, type, src) {
@@ -387,6 +399,8 @@ function Shader()
 		}
 	}
 
+	/* Attributes */
+
 	//Sets Shader Attribute. PARAMETERS: WebGL Context, Attibute Name
 	this.pushAttribute = function (gl, attrName) {
 		this.attirbutes[attrName] = gl.getAttribLocation(this.program, attrName);
@@ -404,6 +418,13 @@ function Shader()
 		for (var attr in this.attirbutes) {
 			gl.disableVertexAttribArray(this.attirbutes[attr]);
 		}
+	}
+
+	/* Uniforms */
+
+	//Pushes Uniform Location To List. PARAMETERS: WebGL Context, Uniform Name
+	this.pushUniform = function (gl, unifName) {
+		this.uniforms[unifName] = gl.getUniformLocation(this.program, unifName);
 	}
 }
 
