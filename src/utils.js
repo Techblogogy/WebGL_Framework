@@ -1,5 +1,27 @@
 var S_FLOAT = 4;
 
+//Framebuffer Wrapper Class
+function Framebuffer() 
+{
+	this.fbo; //Stores WebGL Framebuffer
+	this.texture; //Stores WebGL Framebuffer Texture
+
+	//Initializes Framebuffer. PARAMETERS: WebGL Context, Buffer Width, Buffer Height
+	this.initFramebuffer = function (gl, w, h) {
+		this.fbo = gl.createFramebuffer(); //Create Framebuffer
+		gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+
+		//Create Framebuffer Texture
+		this.texture = new Texture();
+		this.texture.makeTextureBlank(gl, gl.NEAREST, w, h);
+
+		//Bind Texture To FBO
+		gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.texture.texture, 0);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	}
+}
+
 //Sprite Manager
 function Sprite()
 {
@@ -312,6 +334,8 @@ function Shader()
 
 	this.program; //Stores GL Shader Program
 
+	this.attirbutes = {}; //Stores Shader Attributes Location
+
 	//Creates Shader. PARAMETERS: WebGL Context, Shader Type, Shader Source Object
 	this.setShader = function(gl, type, src) {
 		var shader; //Refferene To Working Shader
@@ -360,6 +384,25 @@ function Shader()
 			console.error("Couldn't Create Shader Program: "+gl.getProgramInfoLog(this.program));
 		} else {
 			console.info("Shader Program Linking Successfull");
+		}
+	}
+
+	//Sets Shader Attribute. PARAMETERS: WebGL Context, Attibute Name
+	this.pushAttribute = function (gl, attrName) {
+		this.attirbutes[attrName] = gl.getAttribLocation(this.program, attrName);
+	}
+
+	//Enables All Of Shaders Attributes. PARAMETERS: WebGL Context
+	this.enableAttributes = function (gl) {
+		for (var attr in this.attirbutes) {
+			gl.enableVertexAttribArray(this.attirbutes[attr]);
+		}
+	}
+
+	//Disables All Of Shaders Attributes. PARAMETERS: WebGL Context
+	this.disableAttributes = function (gl) {
+		for (var attr in this.attirbutes) {
+			gl.disableVertexAttribArray(this.attirbutes[attr]);
 		}
 	}
 }

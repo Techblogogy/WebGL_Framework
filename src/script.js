@@ -48,12 +48,11 @@ var res = {
 var rm = new ResourceManager(res);
 var ts = new SpriteSheet();
 
-var lngh;
 var gl;
 var canvas;
 
 var viewMat;
-var mView; //Model Matrix
+// var mView; //Model Matrix
 var modelUn; //Model Matix Uniform
 var viewUn;
 
@@ -86,19 +85,11 @@ window.onload = function () {
 	rm.getResources(IntiGL);
 }
 
-var vertexPA;
-var texturePA;
-var lightPA;
-
-var fbo;
-var fboTex;
+var fboObk;
 
 var vbo, ibo;
 
 var sth, fboSth;
-
-var fboVertexPA;
-var fboTexturePA;
 
 var lt;
 
@@ -112,19 +103,20 @@ function IntiGL() {
 	gl.enable(gl.BLEND);
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
+	//Create Lightmap Texture
+	var tx = new Texture();
+	tx.makeTexture(gl, gl.NEAREST, res.bmb);
+
+	//Create Sprite Sheet Texture
+	lt = new Texture();
+	lt.makeTexture(gl, gl.NEAREST, res.lmp);
+
 	//Create FrameBuffer
-	fbo = gl.createFramebuffer();
-	gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-
-	fboTex = new Texture();
-	fboTex.makeTextureBlank(gl, gl.NEAREST, canvas.width, canvas.height);
-
-	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fboTex.texture, 0);
-
-	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	fboObk = new Framebuffer();
+	fboObk.initFramebuffer(gl, canvas.width, canvas.height);
 
 	spr = new Sprite();
-	spr.createSprite(2/8*2, 2/8*2, 128, 16, 41);
+	spr.createSprite(2/8*2, 2/8*2, 256, 16, 81);
 	spr.initSprite(gl);
 
 	tmp = new Tilemap();
@@ -156,6 +148,7 @@ function IntiGL() {
 	sth.setShaders(gl, res.vert1, res.frag1);
 	sth.makeProgram(gl);
 
+	//Create FBO Shader
 	fboSth = new Shader();
 	fboSth.setShaders(gl, res.vert2, res.frag2);
 	fboSth.makeProgram(gl);
@@ -163,38 +156,25 @@ function IntiGL() {
 	//Set Frame Buffer Shader
 	gl.useProgram(fboSth.program);
 
-	fboVertexPA = gl.getAttribLocation(fboSth.program, "inpCr");
-	gl.enableVertexAttribArray(fboVertexPA);
+	fboSth.pushAttribute(gl, "inpCr"); //Adds Vertex Coordinate Attribute
+	fboSth.pushAttribute(gl, "texPs"); //Adds Texture Coordinatte Attribute
 
-	fboTexturePA = gl.getAttribLocation(fboSth.program, "texPs");
-	gl.enableVertexAttribArray(fboTexturePA);
-
+	//Bind FBO Texture To Texture Unit 2
 	gl.activeTexture(gl.TEXTURE2);
-	gl.bindTexture(gl.TEXTURE_2D, fboTex.texture);
+	gl.bindTexture(gl.TEXTURE_2D, fboObk.texture.texture);
 	gl.uniform1i(gl.getUniformLocation(fboSth.program, "tex1"), 2);
 
-	//Set Program
+	//Bind Lightmap To Texture Unit 1
+	gl.activeTexture(gl.TEXTURE1);
+	gl.bindTexture(gl.TEXTURE_2D, lt.texture);
+	gl.uniform1i(gl.getUniformLocation(fboSth.program, "light"), 1); //Set Light Sampler To Texture Unit 1
+
+	//Set Render Program
 	gl.useProgram(sth.program);
 
-	//Set Position Attribute
-	vertexPA = gl.getAttribLocation(sth.program, "inpCr");
-	gl.enableVertexAttribArray(vertexPA);
-
-	//Set Color Attribute
-	texturePA = gl.getAttribLocation(sth.program, "texPs");
-	gl.enableVertexAttribArray(texturePA);
-
-	lightPA = gl.getAttribLocation(sth.program, "lmpPs");
-	gl.enableVertexAttribArray(lightPA);
-	// gl.vertexAttribPointer(lightPA, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT);
-
-	//Create Lightmap Texture
-	var tx = new Texture();
-	tx.makeTexture(gl, gl.NEAREST, res.bmb);
-
-	//Create Sprite Sheet Texture
-	lt = new Texture();
-	lt.makeTexture(gl, gl.NEAREST, res.lmp);
+	sth.pushAttribute(gl, "inpCr"); //Vertex Position Attribute
+	sth.pushAttribute(gl, "texPs"); //Texture Position Attribute
+	sth.pushAttribute(gl, "lmpPs"); //Light Position Attribute
 
 	//Bind Sprite Sheet To Texture Unit 0
 	gl.activeTexture(gl.TEXTURE0);
@@ -203,7 +183,6 @@ function IntiGL() {
 
 	//Setup Matrixes
 	var proMat = mat4.create(); //Projection Matrix
-	//mat4.perspective(proMat, 45, canvas.width/canvas.height, 0.001, 100.0); //Create Perspective
 	mat4.ortho(proMat, -as, as, -1, 1, 0.001, 100.0); //Create Orthogaphic
 
 	var projUn = gl.getUniformLocation(sth.program, "proj"); //Projection Shader Uniform
@@ -211,10 +190,10 @@ function IntiGL() {
 
 	txOff = gl.getUniformLocation(sth.program, "lOff");
 
-	mView = mat4.create(); //Create Model View Matrix
+	// mView = mat4.create(); //Create Model View Matrix
 
 	modelUn = gl.getUniformLocation(sth.program, "model");
-	gl.uniformMatrix4fv(modelUn, false, mView);
+	// gl.uniformMatrix4fv(modelUn, false, mView);
 
 	viewMat = mat4.create(); //Camera Matrix
 	fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
@@ -252,6 +231,8 @@ function IntiGL() {
 	cTime = new Date().getTime();
 	dTime = cTime - lTime;
 	lTime = cTime;
+
+	sth.enableAttributes(gl);
 
 	window.requestAnimationFrame(Tick);
 }
@@ -305,76 +286,56 @@ function Update()
 	gl.uniformMatrix4fv(viewUn, false, viewMat);
 }
 
-function EnableShader() {
-	gl.useProgram(sth.program);
-
-	gl.enableVertexAttribArray(vertexPA);
-	gl.enableVertexAttribArray(texturePA);
-	gl.enableVertexAttribArray(lightPA);
-}
-
-function DisableShader() {
-	gl.disableVertexAttribArray(vertexPA);
-	gl.disableVertexAttribArray(texturePA);
-	gl.disableVertexAttribArray(lightPA);
-}
-
 function Render()
-{
-	// gl.viewport(0,0,canvas.width,canvas.height); //Set Rendering Target
-	gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+{	
+	//Draw Scene To Framebuffer
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fboObk.fbo); //Set Render Framebuffer
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
-	// gl.useProgram(sth.program);
-
+	//Draw World
 	tmp.setBuffers(gl, modelUn);
 
-	gl.vertexAttribPointer(vertexPA, 2, gl.FLOAT, false, 6*S_FLOAT, 0);
-	gl.vertexAttribPointer(texturePA, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT);
-	gl.vertexAttribPointer(lightPA, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT);
+	gl.vertexAttribPointer(sth.attirbutes.inpCr, 2, gl.FLOAT, false, 6*S_FLOAT, 0); //Set Vertex Position
+	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position
+	gl.vertexAttribPointer(sth.attirbutes.lmpPs, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT); //Set Lightmap Position
 
-	tmp.drawTilemap();
+	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
 
-	spr.setBuffers(gl, modelUn);
+	tmp.drawTilemap(); //World Draw Calls
 
-	gl.vertexAttribPointer(vertexPA, 2, gl.FLOAT, false, 6*S_FLOAT, 0);
-	gl.vertexAttribPointer(texturePA, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT);
-	gl.vertexAttribPointer(lightPA, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT);
+	spr.setBuffers(gl, modelUn); //Set Attributes 
 
-	spr.drawSprite();
+	gl.vertexAttribPointer(sth.attirbutes.inpCr, 2, gl.FLOAT, false, 6*S_FLOAT, 0); //Set Vertex Position
+	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position
+	gl.vertexAttribPointer(sth.attirbutes.lmpPs, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT); //Set Lightmap Position
 
-	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
 
-	DisableShader();
+	spr.drawSprite(); //Sprite Draw Calls
+
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer
+
+	sth.disableAttributes(gl); //Disable Shader Attributes
+
+	//Render FBO To Screen
 
 	gl.viewport(0,0,canvas.width,canvas.height); //Set Rendering Target
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
-	gl.useProgram(fboSth.program);
+	gl.useProgram(fboSth.program); //Set Shader Program
 
-	//Bind FBO To Texture Unit 2
-	gl.activeTexture(gl.TEXTURE2);
-	gl.bindTexture(gl.TEXTURE_2D, fboTex.texture);
-	gl.uniform1i(gl.getUniformLocation(fboSth.program, "tex1"), 2); //Set Tex Sampler To Texture Unit 0
+	gl.bindBuffer(gl.ARRAY_BUFFER, vbo); //Set FBO VBO
+	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo); //Set FBO IBO
 
-	//Bind Lightmap To Texture Unit 1
-	gl.activeTexture(gl.TEXTURE1);
-	gl.bindTexture(gl.TEXTURE_2D, lt.texture);
-	gl.uniform1i(gl.getUniformLocation(fboSth.program, "light"), 1); //Set Light Sampler To Texture Unit 1
+	fboSth.enableAttributes(gl); //Enabe FBO Shader Attributes
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-
-	gl.enableVertexAttribArray(fboVertexPA);
-	gl.enableVertexAttribArray(fboTexturePA);
-
-	gl.vertexAttribPointer(fboVertexPA, 2, gl.FLOAT, false, 4*S_FLOAT, 0);
-	gl.vertexAttribPointer(fboTexturePA, 2, gl.FLOAT, false, 4*S_FLOAT, 2*S_FLOAT);
+	gl.vertexAttribPointer(fboSth.attirbutes.inpCr, 2, gl.FLOAT, false, 4*S_FLOAT, 0); //Set Vertex Position
+	gl.vertexAttribPointer(fboSth.attirbutes.texPs, 2, gl.FLOAT, false, 4*S_FLOAT, 2*S_FLOAT); //Set Texture Position
 
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 
-	gl.disableVertexAttribArray(fboVertexPA);
-	gl.disableVertexAttribArray(fboTexturePA);
+	fboSth.disableAttributes(gl); // Disabe FBO Shader Attributes
 
-	EnableShader();
+	gl.useProgram(sth.program); // Set Main Program
+	sth.enableAttributes(gl); //Enable Main Program Attributes
 }
