@@ -3,11 +3,56 @@ var S_FLOAT = 4;
 //Camera Class
 function Camera() 
 {
+	//Matrixes
 	this.viewMatrix; //Camera View Matrix
 	this.projMatrix; //Projection Matrix
 
-	this.initCamera = function () {
+	//Vectors
+	this.position; //Position Vector
+	this.direction; //Direction Vector
 
+	//Constant Vectors
+	this.forward = vec3.fromValues(0,0,-1); //Constant Forward Vector
+	this.up = vec3.fromValues(0,1,0); //Constant Up Vector
+
+	//Sets Up Camera. PARAMETERS: Projection Type, Width, Height
+	this.initCamera = function (type, w, h) {
+		this.viewMatrix = mat4.create();
+		this.projMatrix = mat4.create();
+
+		this.position = vec3.create();
+		this.direction = vec3.create(); 
+
+		this.initProjection(type, w, h);
+		this.updateView();
+	}
+
+	//Sets Up Appropriate Projection. PARAMETERS: Projection Type, Width, Height
+	this.initProjection = function (type, w, h) {
+		switch (type)
+		{
+			case "ortho":
+				mat4.ortho(this.projMatrix, -(w/h), (w/h), -1, 1, 0.001, 100.0); //Create Orthogaphic
+			break;
+
+			case "projection":
+
+			break;
+		}
+	}
+
+	//Sets Up View Matrix
+	this.updateView = function () {
+		vec3.add(this.direction, this.position, this.forward); //Init Direction
+
+		mat4.lookAt(
+			this.viewMatrix,
+
+			this.position,
+			this.direction,
+
+			this.up
+		);
 	}
 }
 

@@ -48,48 +48,45 @@ var res = {
 var rm = new ResourceManager(res);
 var ts = new SpriteSheet();
 
-var gl;
-var canvas;
+var gl; //WebGL Context
+var canvas; //HTML5 Canvas
 
-var viewMat;
+var viewMat; //View Matrix
 
-var projUn; //Projection Matrix Uniform Location
-var modelUn; //Model Matix Uniform Location
-var viewUn; //View Matrix Uniform Location
+var as; //Screen Aspect Ratio
 
-var as;
-
-var tmp;
-var spr;
+var tmp; //Main Tilemap
+var spr; //Josh Sprite
 
 //View Matrix Stuff
 
-var fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
+// var fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
 
-var vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
+// var vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
 
-var lPos = vec3.create(); //LookAt Vector
-vec3.add(lPos, vPos, fVec); //Calculate LookAt Vecotr
+// var lPos = vec3.create(); //LookAt Vector
+// vec3.add(lPos, vPos, fVec); //Calculate LookAt Vecotr
 
-var upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
+// var upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
 
-window.onload = function () {
-	rm.getResources(IntiGL);
-}
+var fboObk; //Framebuffer
+var vbo, ibo; //Framebuffer VBO And IBO
 
-var fboObk;
+var sth, fboSth; //Shaders
 
-var vbo, ibo;
-
-var sth, fboSth;
-
-var lt;
+var lt; //Lightmap Texture
 
 var cTime = 0, 
 	lTime = 0, 
 	dTime = 0;
 
 var kDwn = false;
+
+var cam;
+
+window.onload = function () {
+	rm.getResources(IntiGL);
+}
 
 function IntiGL() {
 	canvas = document.getElementById('glCan');
@@ -185,28 +182,15 @@ function IntiGL() {
 	gl.bindTexture(gl.TEXTURE_2D, tx.texture);
 	gl.uniform1i(gl.getUniformLocation(sth.program, "tex"), 0); //Set Tex Sampler To Texture Unit 0
 
-	//Setup Matrixes
-	var proMat = mat4.create(); //Projection Matrix
-	mat4.ortho(proMat, -as, as, -1, 1, 0.001, 100.0); //Create Orthogaphic
+	//Create Camera
+	cam = new Camera();
+	cam.initCamera("ortho", canvas.width, canvas.height);
 
-	gl.uniformMatrix4fv(sth.uniforms.proj, false, proMat); //Set Projection Unifrom
+	cam.position = vec3.fromValues(as, 1.0, 1.0);
+	cam.updateView();
 
-	viewMat = mat4.create(); //Camera Matrix
-	fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
-	vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
-	lPos = vec3.create(); //LookAt Vector
-	vec3.add(lPos, vPos, fVec); //Calculate LookAt Vecotr
-	upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
-
-	mat4.lookAt(
-			viewMat,
-
-			vPos,
-			lPos,
-			upPos
-		);
-
-	gl.uniformMatrix4fv(sth.uniforms.view, false, viewMat);
+	gl.uniformMatrix4fv(sth.uniforms.proj, false, cam.projMatrix);
+	gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
 
 	gl.clearColor(0.0,0.0,0.0,1.0); //Set Clear Color
 
@@ -249,21 +233,24 @@ function Update()
 	if (kDwn) {
 		var t = (1/4)/36;
 
-		vPos[0] += t;
+		cam.position[0] += t;
 		mat4.translate(spr.modelMatrix,spr.modelMatrix, [t/as,0,0]);
+
+		cam.updateView();
+		gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
 	}
 
-	vec3.add(lPos, vPos, fVec);
+	// vec3.add(lPos, vPos, fVec);
 
-	mat4.lookAt(
-		viewMat,
+	// mat4.lookAt(
+	// 	viewMat,
 
-		vPos,
-		lPos,
-		upPos
-	);
+	// 	vPos,
+	// 	lPos,
+	// 	upPos
+	// );
 
-	gl.uniformMatrix4fv(sth.uniforms.view, false, viewMat);
+	// gl.uniformMatrix4fv(sth.uniforms.view, false, viewMat);
 }
 
 function Render()
@@ -294,11 +281,9 @@ function Render()
 	spr.drawSprite(); //Sprite Draw Calls
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer
-
 	sth.disableAttributes(gl); //Disable Shader Attributes
 
 	//Render FBO To Screen
-
 	gl.viewport(0,0,canvas.width,canvas.height); //Set Rendering Target
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
@@ -315,7 +300,6 @@ function Render()
 	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 
 	fboSth.disableAttributes(gl); // Disabe FBO Shader Attributes
-
 	gl.useProgram(sth.program); // Set Main Program
 	sth.enableAttributes(gl); //Enable Main Program Attributes
 }
