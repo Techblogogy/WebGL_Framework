@@ -84,6 +84,8 @@ var kDwn = false;
 
 var cam;
 
+var kbrd;
+
 window.onload = function () {
 	rm.getResources(IntiGL);
 }
@@ -194,15 +196,19 @@ function IntiGL() {
 
 	gl.clearColor(0.0,0.0,0.0,1.0); //Set Clear Color
 
-	window.addEventListener("keydown", function(e) {
-		//vPos[0] += 1/8;
-		kDwn = true;
-	}, false);
+	// window.addEventListener("keydown", function(e) {
+	// 	//vPos[0] += 1/8;
+	// 	kDwn = true;
+	// }, false);
 
-	window.addEventListener("keyup", function(e) {
-		// vPos[0] += 1/8;
-		kDwn = false;
-	}, false);
+	// window.addEventListener("keyup", function(e) {
+	// 	// vPos[0] += 1/8;
+	// 	kDwn = false;
+	// }, false);
+
+	kbrd = new Keyboard();
+	kbrd.addListeners();
+	//kbrd.removeListeners();
 
 	GetTime();
 
@@ -230,7 +236,7 @@ function Update()
 {
 	GetTime();
 
-	if (kDwn) {
+	if (kbrd.keys.D) {
 		var t = (1/4)/36;
 
 		cam.position[0] += t;
