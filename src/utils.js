@@ -161,7 +161,7 @@ function Sprite()
 
 	this.initMatrix = function () {
 		this.modelMatrix = mat4.create();
-		mat4.translate(this.modelMatrix, this.modelMatrix, [0.65,0.25,0]);
+		mat4.translate(this.modelMatrix, this.modelMatrix, [(2/8*5)/as,0.25,0]);
 	}
 
 	this.initIBO = function (gl) {
@@ -357,6 +357,7 @@ function Tilemap()
 		];
 	}
 
+	//Set Buffers
 	this.setBuffers = function (gl, modelMUni) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
@@ -368,6 +369,19 @@ function Tilemap()
 	this.drawTilemap = function()
 	{
 		gl.drawElements(gl.TRIANGLES, this.s*6*2, gl.UNSIGNED_SHORT, 0); //Draw Elements On Screen
+	}
+
+	//Collisiton Stuff
+	this.isTileEmpty = function (x,y) {
+		//console.log(Math.floor((spr.modelMatrix[12]*as)/0.25));
+
+		console.log((y/this.tileSize)*this.w+(x/this.tileSize));
+
+		if ( (y/this.tileSize)*this.w+(x/this.tileSize)) {
+			return true;
+		} //else {
+		//	return false;
+		//}
 	}
 }
 

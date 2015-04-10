@@ -58,17 +58,6 @@ var as; //Screen Aspect Ratio
 var tmp; //Main Tilemap
 var spr; //Josh Sprite
 
-//View Matrix Stuff
-
-// var fVec = vec3.fromValues(0.0,0.0,-1.0); //Forward Vector
-
-// var vPos = vec3.fromValues(as, 1.0, 1.0); //Camera Position Vector
-
-// var lPos = vec3.create(); //LookAt Vector
-// vec3.add(lPos, vPos, fVec); //Calculate LookAt Vecotr
-
-// var upPos = vec3.fromValues(0.0, 1.0, 0.0); //Up Vector
-
 var fboObk; //Framebuffer
 var vbo, ibo; //Framebuffer VBO And IBO
 
@@ -196,19 +185,8 @@ function IntiGL() {
 
 	gl.clearColor(0.0,0.0,0.0,1.0); //Set Clear Color
 
-	// window.addEventListener("keydown", function(e) {
-	// 	//vPos[0] += 1/8;
-	// 	kDwn = true;
-	// }, false);
-
-	// window.addEventListener("keyup", function(e) {
-	// 	// vPos[0] += 1/8;
-	// 	kDwn = false;
-	// }, false);
-
 	kbrd = new Keyboard();
 	kbrd.addListeners();
-	//kbrd.removeListeners();
 
 	GetTime();
 
@@ -232,31 +210,52 @@ function GetTime()
 	lTime = cTime;
 }
 
+var ind = 0;
+var passTime = 500;
+var duration = 500;
+
 function Update()
 {
+	var t = (1/4)/36;
+
 	GetTime();
 
 	if (kbrd.keys.D) {
-		var t = (1/4)/36;
-
 		cam.position[0] += t;
 		mat4.translate(spr.modelMatrix,spr.modelMatrix, [t/as,0,0]);
 
 		cam.updateView();
 		gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
+
+		if (passTime >= duration) {
+			passTime = 0;
+
+			ind++;
+
+			if (ind >= 3) ind = 1;
+		} else {
+			passTime += dTime;
+		}
+	} else if (kbrd.keys.A) {
+		cam.position[0] -= t;
+		mat4.translate(spr.modelMatrix,spr.modelMatrix, [-t/as,0,0]);
+
+		cam.updateView();
+		gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
+
+		if (passTime >= duration) {
+			passTime = 0;
+
+			ind++;
+
+			if (ind >= 3) ind = 1;
+		} else {
+			passTime += dTime;
+		}
+	} else {
+		ind = 0;
+		passTime = 500;
 	}
-
-	// vec3.add(lPos, vPos, fVec);
-
-	// mat4.lookAt(
-	// 	viewMat,
-
-	// 	vPos,
-	// 	lPos,
-	// 	upPos
-	// );
-
-	// gl.uniformMatrix4fv(sth.uniforms.view, false, viewMat);
 }
 
 function Render()
@@ -282,7 +281,7 @@ function Render()
 	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position
 	gl.vertexAttribPointer(sth.attirbutes.lmpPs, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT); //Set Lightmap Position
 
-	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
+	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [16/256*ind,0]); //Set Sprite Offset
 
 	spr.drawSprite(); //Sprite Draw Calls
 
