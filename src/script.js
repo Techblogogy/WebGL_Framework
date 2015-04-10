@@ -59,7 +59,6 @@ var tmp; //Main Tilemap
 var spr; //Josh Sprite
 
 var fboObk; //Framebuffer
-var vbo, ibo; //Framebuffer VBO And IBO
 
 var sth, fboSth; //Shaders
 
@@ -109,26 +108,6 @@ function IntiGL() {
 	tmp.getTilemapData(res.tMap, res.bmb, 2/8);
 	tmp.initTilemap(gl);
 
-	var vboDt = [
-		-1.0,  1.0, 0.0, 1.0,
-		 1.0,  1.0, 1.0, 1.0,
-		 1.0, -1.0, 1.0, 0.0,
-		-1.0, -1.0, 0.0, 0.0
-	];
-
-	var iboDt = [
-		0, 1, 2,
-		2, 3, 0
-	];
-
-	vbo = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vboDt), gl.STATIC_DRAW);
-
-	ibo = gl.createBuffer();
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-	gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(iboDt), gl.STATIC_DRAW);
-
 	//Create Shader
 	sth = new Shader();
 	sth.setShaders(gl, res.vert1, res.frag1);
@@ -145,10 +124,9 @@ function IntiGL() {
 	fboSth.pushAttribute(gl, "inpCr"); //Adds Vertex Coordinate Attribute
 	fboSth.pushAttribute(gl, "texPs"); //Adds Texture Coordinatte Attribute
 
-	//Bind FBO Texture To Texture Unit 2
-	gl.activeTexture(gl.TEXTURE2);
-	gl.bindTexture(gl.TEXTURE_2D, fboObk.texture.texture);
-	gl.uniform1i(gl.getUniformLocation(fboSth.program, "tex1"), 2);
+	fboSth.pushUniform(gl, "tex1");
+
+	fboObk.bindFBOTexture(gl, gl.TEXTURE2, 2, fboSth.uniforms.tex1); //Bind FBO To Texture Unit 2
 
 	//Bind Lightmap To Texture Unit 1
 	gl.activeTexture(gl.TEXTURE1);
@@ -180,17 +158,17 @@ function IntiGL() {
 	cam.position = vec3.fromValues(as, 1.0, 1.0);
 	cam.updateView();
 
-	gl.uniformMatrix4fv(sth.uniforms.proj, false, cam.projMatrix);
-	gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
+	gl.uniformMatrix4fv(sth.uniforms.proj, false, cam.projMatrix); //Set Camera Projection Matrix
+	gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix); //Set Camera View Matrix
 
 	gl.clearColor(0.0,0.0,0.0,1.0); //Set Clear Color
 
-	kbrd = new Keyboard();
-	kbrd.addListeners();
+	kbrd = new Keyboard(); //Keyboard Event Class
+	kbrd.addListeners(); //Start Keyboard Listeners
 
-	GetTime();
+	GetTime(); //Calculate Time
 
-	sth.enableAttributes(gl);
+	sth.enableAttributes(gl); //Enable Main Shader Attributes
 
 	window.requestAnimationFrame(Tick);
 }
@@ -294,15 +272,14 @@ function Render()
 
 	gl.useProgram(fboSth.program); //Set Shader Program
 
-	gl.bindBuffer(gl.ARRAY_BUFFER, vbo); //Set FBO VBO
-	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo); //Set FBO IBO
+	fboObk.bindBuffers(gl);
 
 	fboSth.enableAttributes(gl); //Enabe FBO Shader Attributes
 
 	gl.vertexAttribPointer(fboSth.attirbutes.inpCr, 2, gl.FLOAT, false, 4*S_FLOAT, 0); //Set Vertex Position
 	gl.vertexAttribPointer(fboSth.attirbutes.texPs, 2, gl.FLOAT, false, 4*S_FLOAT, 2*S_FLOAT); //Set Texture Position
 
-	gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+	fboObk.drawFBO(gl);
 
 	fboSth.disableAttributes(gl); // Disabe FBO Shader Attributes
 	gl.useProgram(sth.program); // Set Main Program
