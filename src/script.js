@@ -124,14 +124,11 @@ function IntiGL() {
 	fboSth.pushAttribute(gl, "inpCr", 2, 4*S_FLOAT, 0); //Adds Vertex Coordinate Attribute
 	fboSth.pushAttribute(gl, "texPs", 2, 4*S_FLOAT, 2*S_FLOAT); //Adds Texture Coordinatte Attribute
 
-	fboSth.pushUniform(gl, "tex1");
+	fboSth.pushUniform(gl, "tex1"); //FBO Shader Texture Uniform
+	fboObk.texture.bindTexture(gl, gl.TEXTURE2, 2, fboSth.uniforms.tex1);
 
-	fboObk.bindFBOTexture(gl, gl.TEXTURE2, 2, fboSth.uniforms.tex1); //Bind FBO To Texture Unit 2
-
-	//Bind Lightmap To Texture Unit 1
-	gl.activeTexture(gl.TEXTURE1);
-	gl.bindTexture(gl.TEXTURE_2D, lt.texture);
-	gl.uniform1i(gl.getUniformLocation(fboSth.program, "light"), 1); //Set Light Sampler To Texture Unit 1
+	fboSth.pushUniform(gl, "light");
+	lt.bindTexture(gl, gl.TEXTURE1, 1, fboSth.uniforms.light);
 
 	//Set Render Program
 	gl.useProgram(sth.program);
@@ -145,11 +142,9 @@ function IntiGL() {
 	sth.pushUniform(gl, "proj"); //Projection Uniform
 	sth.pushUniform(gl, "model"); //Model Unifrom
 	sth.pushUniform(gl, "view"); //Camera Uniform
-
-	//Bind Sprite Sheet To Texture Unit 0
-	gl.activeTexture(gl.TEXTURE0);
-	gl.bindTexture(gl.TEXTURE_2D, tx.texture);
-	gl.uniform1i(gl.getUniformLocation(sth.program, "tex"), 0); //Set Tex Sampler To Texture Unit 0
+	
+	sth.pushUniform(gl, "tex");
+	tx.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
 
 	//Create Camera
 	cam = new Camera();
@@ -170,7 +165,7 @@ function IntiGL() {
 
 	sth.enableAttributes(gl); //Enable Main Shader Attributes
 
-	window.requestAnimationFrame(Tick);
+	window.requestAnimationFrame(Tick); //Calls Main Loop
 }
 
 function Tick(time)
@@ -243,15 +238,15 @@ function Render()
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
 	//Draw World
-	tmp.setBuffers(gl, sth.uniforms.model);
-	sth.updateAttributes(gl);
+	tmp.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
+	sth.updateAttributes(gl); //Updated World Attributes
 
 	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
 	tmp.drawTilemap(); //World Draw Calls
 
 	//Draw Player
 	spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
-	sth.updateAttributes(gl);
+	sth.updateAttributes(gl); //Updates Player Attributes
 
 	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [16/256*ind,0]); //Set Sprite Offset
 	spr.drawSprite(); //Sprite Draw Calls
@@ -265,7 +260,7 @@ function Render()
 
 	gl.useProgram(fboSth.program); //Set Shader Program
 
-	fboObk.bindBuffers(gl);
+	fboObk.bindBuffers(gl); //Binds Object Buffers
 	fboSth.enableAttributes(gl); //Enabe FBO Shader Attributes
 	fboSth.updateAttributes(gl); //Updates FBO Shader Attributes
 

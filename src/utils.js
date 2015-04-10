@@ -115,13 +115,6 @@ function Framebuffer()
 		this.initVBO(gl);
 	}
 
-	//Binds Framebuffer Texture To Texture Unit. PARAMETERS: WebGL Context, Texture Unit, Texture Unit Number, Texture Shader Uniform
-	this.bindFBOTexture = function (gl, texUnit, texUnitNo, uniform) {
-		gl.activeTexture(texUnit);
-		gl.bindTexture(gl.TEXTURE_2D, this.texture.texture);
-		gl.uniform1i(uniform, texUnitNo);
-	}
-
 	//Creates Framebuffer Index Buffer
 	this.initIBO = function (gl) {
 		this.iboData = [
@@ -178,8 +171,8 @@ function Sprite()
 
 	this.modelMatrix; //Sprite Model Matrix
 
-	this.vbo;
-	this.ibo;
+	this.vbo; //WebGL Vertex Buffer Object
+	this.ibo; //WebGL Index Buffer Object
 
 	this.vboData = []; //Stores Vertex Data
 	this.iboData = []; //Stores Indisies
@@ -426,7 +419,7 @@ function Tilemap()
 		gl.drawElements(gl.TRIANGLES, this.s*6*2, gl.UNSIGNED_SHORT, 0); //Draw Elements On Screen
 	}
 
-	//Collisiton Stuff
+	//Collisiton Stuff. WIP
 	this.isTileEmpty = function (x,y) {
 		//console.log(Math.floor((spr.modelMatrix[12]*as)/0.25));
 
@@ -480,11 +473,17 @@ function Texture()
 
 		gl.bindTexture(gl.TEXTURE_2D, null);
 	}
+
+	//Binds Texture To Texture Unit. PARAMETERS: WebGL Context, Texture Unit, Texture Unit Number, Texture Shader Uniform
+	this.bindTexture = function (gl, texUnit, texUnitNo, uniform) {
+		gl.activeTexture(texUnit);
+		gl.bindTexture(gl.TEXTURE_2D, this.texture);
+		gl.uniform1i(uniform, texUnitNo);
+	}
 }
 
 //WebGL Shaders Wrapper Class
-function Shader()
-{
+function Shader() {
 	this.vertex; //Stores GL Vertex Shader
 	this.fragment; //Stores GL Frament Shader
 
@@ -548,7 +547,12 @@ function Shader()
 
 	//Sets Shader Attribute. PARAMETERS: WebGL Context, Attibute Name
 	this.pushAttribute = function (gl, attrName, lng, str, offs) {
-		this.attirbutes[attrName] = { location: gl.getAttribLocation(this.program, attrName), stride: str, pointer: offs, length: lng};
+		this.attirbutes[attrName] = { 	
+			location: gl.getAttribLocation(this.program, attrName),
+			length: lng,
+			stride: str,
+			pointer: offs
+		};
 	}
 
 	//Enables All Of Shaders Attributes. PARAMETERS: WebGL Context
@@ -568,13 +572,15 @@ function Shader()
 	//Updates Attributes. PATAMETERS: WebGL Context
 	this.updateAttributes = function (gl) {
 		for (var attr in this.attirbutes) {
-			gl.vertexAttribPointer(this.attirbutes[attr].location, 
-								   this.attirbutes[attr].length, 
+			gl.vertexAttribPointer(
+					this.attirbutes[attr].location, 
+					this.attirbutes[attr].length, 
 
-								   gl.FLOAT, false, 
+					gl.FLOAT, false, 
 
-								   this.attirbutes[attr].stride, 
-								   this.attirbutes[attr].pointer);
+					this.attirbutes[attr].stride, 
+					this.attirbutes[attr].pointer
+				);
 		}
 	}
 
@@ -587,8 +593,7 @@ function Shader()
 }
 
 //Sprite Sheet Managing Class
-function SpriteSheet()
-{
+function SpriteSheet() {
 	this.sheetS; //Sprite Sheet Size In Pixels
 	this.tileS; //Tile Size In Pixels
 
@@ -645,8 +650,7 @@ function SpriteSheet()
 }
 
 //Resource Managing Class
-function ResourceManager(rcsComp)
-{
+function ResourceManager(rcsComp) {
 	var resources = rcsComp; //Reosurce Storage Object
 
 	var rcsLoaded = 0; //Number Of Resources Loaded
