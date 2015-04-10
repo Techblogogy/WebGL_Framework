@@ -547,21 +547,34 @@ function Shader()
 	/* Attributes */
 
 	//Sets Shader Attribute. PARAMETERS: WebGL Context, Attibute Name
-	this.pushAttribute = function (gl, attrName) {
-		this.attirbutes[attrName] = gl.getAttribLocation(this.program, attrName);
+	this.pushAttribute = function (gl, attrName, lng, str, offs) {
+		this.attirbutes[attrName] = { location: gl.getAttribLocation(this.program, attrName), stride: str, pointer: offs, length: lng};
 	}
 
 	//Enables All Of Shaders Attributes. PARAMETERS: WebGL Context
 	this.enableAttributes = function (gl) {
 		for (var attr in this.attirbutes) {
-			gl.enableVertexAttribArray(this.attirbutes[attr]);
+			gl.enableVertexAttribArray(this.attirbutes[attr].location);
 		}
 	}
 
 	//Disables All Of Shaders Attributes. PARAMETERS: WebGL Context
 	this.disableAttributes = function (gl) {
 		for (var attr in this.attirbutes) {
-			gl.disableVertexAttribArray(this.attirbutes[attr]);
+			gl.disableVertexAttribArray(this.attirbutes[attr].location);
+		}
+	}
+
+	//Updates Attributes. PATAMETERS: WebGL Context
+	this.updateAttributes = function (gl) {
+		for (var attr in this.attirbutes) {
+			gl.vertexAttribPointer(this.attirbutes[attr].location, 
+								   this.attirbutes[attr].length, 
+
+								   gl.FLOAT, false, 
+
+								   this.attirbutes[attr].stride, 
+								   this.attirbutes[attr].pointer);
 		}
 	}
 

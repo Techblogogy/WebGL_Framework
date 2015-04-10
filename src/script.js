@@ -121,8 +121,8 @@ function IntiGL() {
 	//Set Frame Buffer Shader
 	gl.useProgram(fboSth.program);
 
-	fboSth.pushAttribute(gl, "inpCr"); //Adds Vertex Coordinate Attribute
-	fboSth.pushAttribute(gl, "texPs"); //Adds Texture Coordinatte Attribute
+	fboSth.pushAttribute(gl, "inpCr", 2, 4*S_FLOAT, 0); //Adds Vertex Coordinate Attribute
+	fboSth.pushAttribute(gl, "texPs", 2, 4*S_FLOAT, 2*S_FLOAT); //Adds Texture Coordinatte Attribute
 
 	fboSth.pushUniform(gl, "tex1");
 
@@ -137,9 +137,9 @@ function IntiGL() {
 	gl.useProgram(sth.program);
 
 	//Get Attributes
-	sth.pushAttribute(gl, "inpCr"); //Vertex Position Attribute
-	sth.pushAttribute(gl, "texPs"); //Texture Position Attribute
-	sth.pushAttribute(gl, "lmpPs"); //Light Position Attribute
+	sth.pushAttribute(gl, "inpCr", 2, 6*S_FLOAT, 0); //Vertex Position Attribute
+	sth.pushAttribute(gl, "texPs", 2, 6*S_FLOAT, 2*S_FLOAT); //Texture Position Attribute
+	sth.pushAttribute(gl, "lmpPs", 2, 6*S_FLOAT, 4*S_FLOAT); //Light Position Attribute
 
 	//Get Uniform Locations
 	sth.pushUniform(gl, "proj"); //Projection Uniform
@@ -244,23 +244,16 @@ function Render()
 
 	//Draw World
 	tmp.setBuffers(gl, sth.uniforms.model);
-
-	gl.vertexAttribPointer(sth.attirbutes.inpCr, 2, gl.FLOAT, false, 6*S_FLOAT, 0); //Set Vertex Position
-	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position
-	gl.vertexAttribPointer(sth.attirbutes.lmpPs, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT); //Set Lightmap Position
+	sth.updateAttributes(gl);
 
 	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
-
 	tmp.drawTilemap(); //World Draw Calls
 
+	//Draw Player
 	spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
-
-	gl.vertexAttribPointer(sth.attirbutes.inpCr, 2, gl.FLOAT, false, 6*S_FLOAT, 0); //Set Vertex Position
-	gl.vertexAttribPointer(sth.attirbutes.texPs, 2, gl.FLOAT, false, 6*S_FLOAT, 2*S_FLOAT); //Set Texture Position
-	gl.vertexAttribPointer(sth.attirbutes.lmpPs, 2, gl.FLOAT, false, 6*S_FLOAT, 4*S_FLOAT); //Set Lightmap Position
+	sth.updateAttributes(gl);
 
 	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [16/256*ind,0]); //Set Sprite Offset
-
 	spr.drawSprite(); //Sprite Draw Calls
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer
@@ -273,13 +266,10 @@ function Render()
 	gl.useProgram(fboSth.program); //Set Shader Program
 
 	fboObk.bindBuffers(gl);
-
 	fboSth.enableAttributes(gl); //Enabe FBO Shader Attributes
+	fboSth.updateAttributes(gl); //Updates FBO Shader Attributes
 
-	gl.vertexAttribPointer(fboSth.attirbutes.inpCr, 2, gl.FLOAT, false, 4*S_FLOAT, 0); //Set Vertex Position
-	gl.vertexAttribPointer(fboSth.attirbutes.texPs, 2, gl.FLOAT, false, 4*S_FLOAT, 2*S_FLOAT); //Set Texture Position
-
-	fboObk.drawFBO(gl);
+	fboObk.drawFBO(gl); //Framebuffer Draw Calls
 
 	fboSth.disableAttributes(gl); // Disabe FBO Shader Attributes
 	gl.useProgram(sth.program); // Set Main Program
