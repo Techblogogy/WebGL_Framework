@@ -1,5 +1,20 @@
 var S_FLOAT = 4;
 
+function Text()
+{
+	this.txt; //Text
+
+	this.w; //Width Of Text In Characters
+	this.h; //Height Of Text In Characters
+
+	this.txtMap; //Text Tilemap
+
+	//Initializes Text Object
+	this.initText = function (text, width) {
+
+	}
+}
+
 //Keyboard Wrapper
 function Keyboard() 
 {
@@ -253,6 +268,7 @@ function Tilemap()
 	//Tilemap Variables
 	this.w; //Width Of Tilemap In Tiles
 	this.h; //Height Of Tilemap In Tiles
+	
 	this.s; //Tilemap Size. Width * Height
 
 	this.tileSize; //Relative Size Of A Single Tile
@@ -274,7 +290,7 @@ function Tilemap()
 	this.vboData = []; //Stores Vertex Buffer Object Data
 	this.iboData = []; //Stores Index Buffer Object Data
 
-	this.modelMatrix;
+	this.modelMatrix; //Stores Tilemap Transformations
 
 	//Gets Tilemap Data From File. PARAMETERS: Tilemap JSON, SpriteSheet
 	this.getTilemapData = function(mapRes, sprRes, tSize)

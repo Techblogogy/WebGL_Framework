@@ -142,7 +142,8 @@ function IntiGL() {
 	sth.pushUniform(gl, "proj"); //Projection Uniform
 	sth.pushUniform(gl, "model"); //Model Unifrom
 	sth.pushUniform(gl, "view"); //Camera Uniform
-	
+
+
 	sth.pushUniform(gl, "tex");
 	tx.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
 
@@ -254,12 +255,13 @@ function Render()
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer
 	sth.disableAttributes(gl); //Disable Shader Attributes
 
-	//Render FBO To Screen
+	//Set Framebuffer To Main and clear it
 	gl.viewport(0,0,canvas.width,canvas.height); //Set Rendering Target
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
 	gl.useProgram(fboSth.program); //Set Shader Program
 
+	//Render Framebuffer
 	fboObk.bindBuffers(gl); //Binds Object Buffers
 	fboSth.enableAttributes(gl); //Enabe FBO Shader Attributes
 	fboSth.updateAttributes(gl); //Updates FBO Shader Attributes
