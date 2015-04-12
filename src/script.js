@@ -42,6 +42,11 @@ var res = {
 	bmb: {
 		type: "image",
 		src: "./res/textures/BMB/GameSheet.png"
+	},
+
+	bitFnt: {
+		type: "image",
+		src: "./res/textures/BMB/FontSheet.png"
 	}
 };
 
@@ -74,6 +79,9 @@ var cam;
 
 var kbrd;
 
+var fntTex;
+var tx;
+
 window.onload = function () {
 	rm.getResources(IntiGL);
 }
@@ -89,12 +97,15 @@ function IntiGL() {
 	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 	//Create Lightmap Texture
-	var tx = new Texture();
+	tx = new Texture();
 	tx.makeTexture(gl, gl.NEAREST, res.bmb);
 
 	//Create Sprite Sheet Texture
 	lt = new Texture();
 	lt.makeTexture(gl, gl.NEAREST, res.lmp);
+
+	fntTex = new Texture();
+	fntTex.makeTexture(gl, gl.NEAREST, res.bitFnt);
 
 	//Create FrameBuffer
 	fboObk = new Framebuffer();
@@ -109,7 +120,7 @@ function IntiGL() {
 
 	//Create Tilemap
 	tmp = new Tilemap();
-	tmp.getTilemapData(res.tMap, res.bmb, 2/8);
+	tmp.getTilemapDataFile(res.tMap, res.bmb, 2/8);
 	tmp.initTilemap(gl);
 
 	//Create Shader
@@ -121,6 +132,12 @@ function IntiGL() {
 	fboSth = new Shader();
 	fboSth.setShaders(gl, res.vert2, res.frag2);
 	fboSth.makeProgram(gl);
+
+	//Create Text
+	intText = new Text();
+	intText.txt = "HelloWorldIamhereLOL";
+	intText.initText(10, res.bitFnt, 2/4);
+	intText.txtMap.initTilemap(gl);
 
 	//Set Frame Buffer Shader
 	gl.useProgram(fboSth.program);
@@ -146,10 +163,8 @@ function IntiGL() {
 	sth.pushUniform(gl, "proj"); //Projection Uniform
 	sth.pushUniform(gl, "model"); //Model Unifrom
 	sth.pushUniform(gl, "view"); //Camera Uniform
-
-
-	sth.pushUniform(gl, "tex");
-	tx.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
+	sth.pushUniform(gl, "tex"); //Texture Uniform
+	sth.pushUniform(gl, "texOff"); //Texture Offset Uniform
 
 	//Create Camera
 	cam = new Camera();
@@ -242,19 +257,32 @@ function Render()
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fboObk.fbo); //Set Render Framebuffer
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
+	//Bind Main Sheet
+	tx.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
+
 	//Draw World
 	tmp.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
 	sth.updateAttributes(gl); //Updated World Attributes
 
-	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
+	gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
 	tmp.drawTilemap(); //World Draw Calls
 
 	//Draw Player
 	spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
 	sth.updateAttributes(gl); //Updates Player Attributes
 
-	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [16/256*ind,0]); //Set Sprite Offset
+	gl.uniform2fv(sth.uniforms.texOff, [16/256*ind,0]); //Set Sprite Offset
 	spr.drawSprite(); //Sprite Draw Calls
+
+	//Bind Font Sheet
+	fntTex.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
+
+	//Draw Text
+	intText.txtMap.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
+	sth.updateAttributes(gl); //Updated World Attributes
+
+	gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
+	intText.txtMap.drawTilemap(); //World Draw Calls
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer
 	sth.disableAttributes(gl); //Disable Shader Attributes

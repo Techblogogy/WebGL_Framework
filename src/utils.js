@@ -1,7 +1,9 @@
 var S_FLOAT = 4;
 
+//Text Wrapper Class
 function Text()
 {
+	this.txtVals = []; //Text In ASCII Decimal
 	this.txt; //Text
 
 	this.w; //Width Of Text In Characters
@@ -10,8 +12,18 @@ function Text()
 	this.txtMap; //Text Tilemap
 
 	//Initializes Text Object
-	this.initText = function (text, width) {
+	this.initText = function (width, font, size) {
+		this.w = width;
+		this.h = Math.round(this.txt.length/this.w);
 
+		this.txt = this.txt.toUpperCase();
+
+		for (var i=0; i<this.txt.length; i++) {
+			this.txtVals[i] = this.txt.charCodeAt(i) - "A".charCodeAt(0) + 1;
+		}
+
+		this.txtMap = new Tilemap();
+		this.txtMap.getTilemapData(font, size, this.w, this.h, this.txtVals, 128, 8);
 	}
 }
 
@@ -172,115 +184,6 @@ function Framebuffer()
 	}
 }
 
-//Sprite Manager
-function Sprite()
-{
-	this.w; //Relative Width Of Sprite
-	this.h; //Relative Height Of Sprite
-
-	this.tileSizePx; //Sprite Tile Size In Pixels
-	this.sprsSizePx; //Sprite Sheet Size In Pixels
-
-	this.spriteSheet; //Spitesheet
-	this.spriteCoord = []; //Spritesheet Sprite Coordinates
-
-	this.modelMatrix; //Sprite Model Matrix
-
-	this.vbo; //WebGL Vertex Buffer Object
-	this.ibo; //WebGL Index Buffer Object
-
-	this.vboData = []; //Stores Vertex Data
-	this.iboData = []; //Stores Indisies
-
-	//PARAMETERS: Width Of Sprite, Height Of Sprite, Sprite Sheet Size In Pixels, Tile Size In Pixels, Sprite Id On Tilemap
-	this.createSprite = function (width, height, sheetS, tileS, id) {
-		this.w = width;
-		this.h = height;
-
-		this.sprsSizePx = sheetS;
-		this.tileSizePx = tileS;
-
-		this.spriteSheet = new SpriteSheet();
-		this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
-
-		this.spriteCoord = this.spriteSheet.getUVArr(id);
-	}
-
-	this.initSprite = function (gl) {
-		this.VBOIdentity();
-		this.IBOIdentity();
-
-		this.initMatrix();
-
-		this.initVBO(gl);
-		this.initIBO(gl);
-	}
-
-	this.initMatrix = function () {
-		this.modelMatrix = mat4.create();
-	}
-
-	this.initVBO = function (gl) {
-		this.vbo = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vboData), gl.STATIC_DRAW);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-	}
-
-	this.initIBO = function (gl) {
-		this.ibo = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.iboData), gl.STATIC_DRAW);
-
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-	}
-
-	this.initVBOEmpty = function (gl, size) {
-		this.vbo = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-		gl.bufferData(gl.ARRAY_BUFFER, size, gl.STATIC_DRAW);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-	}
-
-	this.initIBOEmpty = function (gl, size) {
-		this.ibo = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, size, gl.STATIC_DRAW);
-
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-	}
-
-	this.VBOIdentity = function () {
-		this.vboData = [
-			0.0, 	this.h, this.spriteCoord[0], this.spriteCoord[1],  0.0, 1/8,
-			this.w, this.h, this.spriteCoord[2], this.spriteCoord[3],  2/8, 1/8,
-			this.w, 0.0,	this.spriteCoord[4], this.spriteCoord[5],  2/8, 0.0,
-			0.0, 	0.0,	this.spriteCoord[6], this.spriteCoord[7],  0.0, 0.0
-		];
-	}
-
-	this.IBOIdentity = function () {
-		this.iboData = [
-			0,1,2,
-			2,3,0
-		];
-	}
-
-	//PARAMETERS: WebGL Context, Model Matrix Uniform
-	this.setBuffers = function (gl, modelMUni) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-
-		gl.uniformMatrix4fv(modelMUni, false, this.modelMatrix);
-	}
-
-	this.drawSprite = function () {
-		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
-	}
-}
-
 //Tilemap Manager
 function Tilemap()
 {
@@ -292,29 +195,13 @@ function Tilemap()
 
 	this.spr; //Tilemap Sprite
 
-	// this.tileSize; //Relative Size Of A Single Tile
-	// this.tileSizePx; //Tile Size In Pixels
-	// this.sprsSizePx; //Sprite Sheet Size In Pixels
-
 	this.lightW; //Light Map Tile Width
 	this.lightH; //Light Map Tile Height
 
 	this.map; //Tilemap Data
 
-	// this.spriteSheet; //Tiles Textures Sprite Sheet
-	// this.spriteCoord = []; //Coordinate Of Tilemap In Sprite Sheet
-
-	//WebGL Variables
-	// this.vbo; //WebGL Vertex Buffer Object
-	// this.ibo; //WebGL Index Buffer Object
-
-	// this.vboData = []; //Stores Vertex Buffer Object Data
-	// this.iboData = []; //Stores Index Buffer Object Data
-
-	// this.modelMatrix; //Stores Tilemap Transformations
-
-	//Gets Tilemap Data From File. PARAMETERS: Tilemap JSON, SpriteSheet
-	this.getTilemapData = function(mapRes, sprRes, tSize)
+	//Gets Tilemap Data From File. PARAMETERS: Tilemap JSON, SpriteSheet, Relative Tile Size
+	this.getTilemapDataFile = function(mapRes, sprRes, tSize)
 	{
 		//Get Tilemap Tiles, Width, Height
 		var txtJSON = JSON.parse(mapRes.txt); //Translate JSON Text To Object
@@ -333,12 +220,33 @@ function Tilemap()
 			0 //Sprite Id
 		);
 
-		// this.tileSizePx = txtJSON.tilesets[0].tilewidth;
-		// this.sprsSizePx = txtJSON.tilesets[0].imagewidth;
+		//Calculate Tilemap Size
+		this.s = this.w * this.h;
 
-		//Get Spritesheet
-		// this.spriteSheet = new SpriteSheet();
-		// this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
+		this.tileSize = tSize; //Set Relative Tile Size
+
+		this.lightW = 1/8; //this.w;
+		this.lightH = 1/this.h;
+	}
+
+	//Gets Tilemap Data From Parameters. PARAMETERS: SpriteSheet, Relative Tile Size, Width Of Map, Height Of Map, Map Data, Sprite Sheet Size, Tile Size
+	this.getTilemapData = function(sprRes, tSize, width, height, mp, imagewidth, tilewidth)
+	{
+		//Get Tilemap Tiles, Width, Height
+		this.map = mp; //txtJSON.layers[0].data;
+
+		this.w = width; //txtJSON.layers[0].width;
+		this.h = height; //txtJSON.layers[0].height;
+
+		this.spr = new Sprite();
+		this.spr.createSprite(
+			tSize, tSize, //Width, Height
+
+			imagewidth, //Sprite Sheet Size In Pixels
+			tilewidth, //Tile Size In Pixels
+
+			0 //Sprite Id
+		);
 
 		//Calculate Tilemap Size
 		this.s = this.w * this.h;
@@ -462,6 +370,115 @@ function Tilemap()
 		} //else {
 		//	return false;
 		//}
+	}
+}
+
+//Sprite Manager
+function Sprite()
+{
+	this.w; //Relative Width Of Sprite
+	this.h; //Relative Height Of Sprite
+
+	this.tileSizePx; //Sprite Tile Size In Pixels
+	this.sprsSizePx; //Sprite Sheet Size In Pixels
+
+	this.spriteSheet; //Spitesheet
+	this.spriteCoord = []; //Spritesheet Sprite Coordinates
+
+	this.modelMatrix; //Sprite Model Matrix
+
+	this.vbo; //WebGL Vertex Buffer Object
+	this.ibo; //WebGL Index Buffer Object
+
+	this.vboData = []; //Stores Vertex Data
+	this.iboData = []; //Stores Indisies
+
+	//PARAMETERS: Width Of Sprite, Height Of Sprite, Sprite Sheet Size In Pixels, Tile Size In Pixels, Sprite Id On Tilemap
+	this.createSprite = function (width, height, sheetS, tileS, id) {
+		this.w = width;
+		this.h = height;
+
+		this.sprsSizePx = sheetS;
+		this.tileSizePx = tileS;
+
+		this.spriteSheet = new SpriteSheet();
+		this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
+
+		this.spriteCoord = this.spriteSheet.getUVArr(id);
+	}
+
+	this.initSprite = function (gl) {
+		this.VBOIdentity();
+		this.IBOIdentity();
+
+		this.initMatrix();
+
+		this.initVBO(gl);
+		this.initIBO(gl);
+	}
+
+	this.initMatrix = function () {
+		this.modelMatrix = mat4.create();
+	}
+
+	this.initVBO = function (gl) {
+		this.vbo = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vboData), gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
+	}
+
+	this.initIBO = function (gl) {
+		this.ibo = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.iboData), gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+	}
+
+	this.initVBOEmpty = function (gl, size) {
+		this.vbo = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+		gl.bufferData(gl.ARRAY_BUFFER, size, gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
+	}
+
+	this.initIBOEmpty = function (gl, size) {
+		this.ibo = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, size, gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+	}
+
+	this.VBOIdentity = function () {
+		this.vboData = [
+			0.0, 	this.h, this.spriteCoord[0], this.spriteCoord[1],  0.0, 1/8,
+			this.w, this.h, this.spriteCoord[2], this.spriteCoord[3],  2/8, 1/8,
+			this.w, 0.0,	this.spriteCoord[4], this.spriteCoord[5],  2/8, 0.0,
+			0.0, 	0.0,	this.spriteCoord[6], this.spriteCoord[7],  0.0, 0.0
+		];
+	}
+
+	this.IBOIdentity = function () {
+		this.iboData = [
+			0,1,2,
+			2,3,0
+		];
+	}
+
+	//PARAMETERS: WebGL Context, Model Matrix Uniform
+	this.setBuffers = function (gl, modelMUni) {
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+
+		gl.uniformMatrix4fv(modelMUni, false, this.modelMatrix);
+	}
+
+	this.drawSprite = function () {
+		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 	}
 }
 
