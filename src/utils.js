@@ -178,11 +178,11 @@ function Sprite()
 	this.w; //Relative Width Of Sprite
 	this.h; //Relative Height Of Sprite
 
-	this.sheet; //Spitesheet
-	this.sheetSizePx; //Size Of Sprite Sheet Texture
-	this.tileSizePx; //Size Of Single Sprite Sheet Tile In Pixels
+	this.tileSizePx; //Sprite Tile Size In Pixels
+	this.sprsSizePx; //Sprite Sheet Size In Pixels
 
-	this.spriteCoords; //Spritesheet Sprite Coordinates
+	this.spriteSheet; //Spitesheet
+	this.spriteCoord = []; //Spritesheet Sprite Coordinates
 
 	this.modelMatrix; //Sprite Model Matrix
 
@@ -197,13 +197,13 @@ function Sprite()
 		this.w = width;
 		this.h = height;
 
-		this.sheetSizePx = sheetS;
+		this.sprsSizePx = sheetS;
 		this.tileSizePx = tileS;
 
-		this.sheet = new SpriteSheet();
-		this.sheet.createSheet(this.sheetSizePx, this.tileSizePx);
+		this.spriteSheet = new SpriteSheet();
+		this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
 
-		this.spriteCoords = this.sheet.getUVArr(id);
+		this.spriteCoord = this.spriteSheet.getUVArr(id);
 	}
 
 	this.initSprite = function (gl) {
@@ -216,29 +216,48 @@ function Sprite()
 		this.initIBO(gl);
 	}
 
+	this.initMatrix = function () {
+		this.modelMatrix = mat4.create();
+	}
+
 	this.initVBO = function (gl) {
 		this.vbo = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vboData), gl.STATIC_DRAW);
-	}
 
-	this.initMatrix = function () {
-		this.modelMatrix = mat4.create();
-		mat4.translate(this.modelMatrix, this.modelMatrix, [(2/8*5)/as,0.25,0]);
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	}
 
 	this.initIBO = function (gl) {
 		this.ibo = gl.createBuffer();
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
 		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.iboData), gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+	}
+
+	this.initVBOEmpty = function (gl, size) {
+		this.vbo = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
+		gl.bufferData(gl.ARRAY_BUFFER, size, gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
+	}
+
+	this.initIBOEmpty = function (gl, size) {
+		this.ibo = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, size, gl.STATIC_DRAW);
+
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
 	}
 
 	this.VBOIdentity = function () {
 		this.vboData = [
-			0.0, 	this.h, this.spriteCoords[0], this.spriteCoords[1],  0.0, 1/8,
-			this.w, this.h, this.spriteCoords[2], this.spriteCoords[3],  2/8, 1/8,
-			this.w, 0.0,	this.spriteCoords[4], this.spriteCoords[5],  2/8, 0.0,
-			0.0, 	0.0,	this.spriteCoords[6], this.spriteCoords[7],  0.0, 0.0
+			0.0, 	this.h, this.spriteCoord[0], this.spriteCoord[1],  0.0, 1/8,
+			this.w, this.h, this.spriteCoord[2], this.spriteCoord[3],  2/8, 1/8,
+			this.w, 0.0,	this.spriteCoord[4], this.spriteCoord[5],  2/8, 0.0,
+			0.0, 	0.0,	this.spriteCoord[6], this.spriteCoord[7],  0.0, 0.0
 		];
 	}
 
@@ -268,29 +287,31 @@ function Tilemap()
 	//Tilemap Variables
 	this.w; //Width Of Tilemap In Tiles
 	this.h; //Height Of Tilemap In Tiles
-	
+
 	this.s; //Tilemap Size. Width * Height
 
-	this.tileSize; //Relative Size Of A Single Tile
-	this.tileSizePx; //Tile Size In Pixels
-	this.sprsSizePx; //Sprite Sheet Size In Pixels
+	this.spr; //Tilemap Sprite
+
+	// this.tileSize; //Relative Size Of A Single Tile
+	// this.tileSizePx; //Tile Size In Pixels
+	// this.sprsSizePx; //Sprite Sheet Size In Pixels
 
 	this.lightW; //Light Map Tile Width
 	this.lightH; //Light Map Tile Height
 
 	this.map; //Tilemap Data
 
-	this.spriteSheet; //Tiles Textures Sprite Sheet
-	this.spriteCoord = []; //Coordinate Of Tilemap In Sprite Sheet
+	// this.spriteSheet; //Tiles Textures Sprite Sheet
+	// this.spriteCoord = []; //Coordinate Of Tilemap In Sprite Sheet
 
 	//WebGL Variables
-	this.vbo; //WebGL Vertex Buffer Object
-	this.ibo; //WebGL Index Buffer Object
+	// this.vbo; //WebGL Vertex Buffer Object
+	// this.ibo; //WebGL Index Buffer Object
 
-	this.vboData = []; //Stores Vertex Buffer Object Data
-	this.iboData = []; //Stores Index Buffer Object Data
+	// this.vboData = []; //Stores Vertex Buffer Object Data
+	// this.iboData = []; //Stores Index Buffer Object Data
 
-	this.modelMatrix; //Stores Tilemap Transformations
+	// this.modelMatrix; //Stores Tilemap Transformations
 
 	//Gets Tilemap Data From File. PARAMETERS: Tilemap JSON, SpriteSheet
 	this.getTilemapData = function(mapRes, sprRes, tSize)
@@ -302,12 +323,22 @@ function Tilemap()
 		this.w = txtJSON.layers[0].width;
 		this.h = txtJSON.layers[0].height;
 
-		this.tileSizePx = txtJSON.tilesets[0].tilewidth;
-		this.sprsSizePx = txtJSON.tilesets[0].imagewidth;
+		this.spr = new Sprite();
+		this.spr.createSprite(
+			tSize, tSize, //Width, Height
+
+			txtJSON.tilesets[0].imagewidth, //Sprite Sheet Size In Pixels
+			txtJSON.tilesets[0].tilewidth, //Tile Size In Pixels
+
+			0 //Sprite Id
+		);
+
+		// this.tileSizePx = txtJSON.tilesets[0].tilewidth;
+		// this.sprsSizePx = txtJSON.tilesets[0].imagewidth;
 
 		//Get Spritesheet
-		this.spriteSheet = new SpriteSheet();
-		this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
+		// this.spriteSheet = new SpriteSheet();
+		// this.spriteSheet.createSheet(this.sprsSizePx, this.tileSizePx);
 
 		//Calculate Tilemap Size
 		this.s = this.w * this.h;
@@ -324,7 +355,7 @@ function Tilemap()
 		this.VBOIdentity();
 		this.IBOIdentity();
 
-		this.initMatrix();
+		this.spr.initMatrix();
 
 		this.initVBO(gl);
 		this.initIBO(gl);
@@ -333,48 +364,46 @@ function Tilemap()
 	//Initializes Vertex Buffer Object. PARAMETERS: WebGL Context
 	this.initVBO = function (gl)
 	{
-		//Create VBO for TileMap
-		this.vbo = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-		gl.bufferData(gl.ARRAY_BUFFER, S_FLOAT*this.vboData.length*this.s, gl.STATIC_DRAW);
+		this.spr.initVBOEmpty(gl, S_FLOAT*this.spr.vboData.length*this.s);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.spr.vbo);
 
 		for (var y=(this.h-1); y>=0; y--)
 		{
 			//Set VBO Data X Identity
-			this.vboData[0] = -this.tileSize;
-			this.vboData[6] = 0;
-			this.vboData[12] = 0;
-			this.vboData[18] = -this.tileSize;
+			this.spr.vboData[0] = -this.tileSize;
+			this.spr.vboData[6] = 0;
+			this.spr.vboData[12] = 0;
+			this.spr.vboData[18] = -this.tileSize;
 
 			//Set VBO Lightmap Data U Identity
-			this.vboData[4] = -this.lightW; //TO-DO. Add Lightmap
-			this.vboData[10] = 0;
-			this.vboData[16] = 0;
-			this.vboData[22] = -this.lightW;
+			this.spr.vboData[4] = -this.lightW; //TO-DO. Add Lightmap
+			this.spr.vboData[10] = 0;
+			this.spr.vboData[16] = 0;
+			this.spr.vboData[22] = -this.lightW;
 
 			//Write X Tilemap Data
 			for (var x=0; x<this.w; x++)
 			{
-				this.spriteCoord = this.spriteSheet.getUVArr(this.map[y*this.w+x]);
+				this.spr.spriteCoord = this.spr.spriteSheet.getUVArr(this.map[y*this.w+x]);
 
-				for (var i=0; i<this.vboData.length; i+=6)
+				for (var i=0; i<this.spr.vboData.length; i+=6)
 				{
-					this.vboData[i] += this.tileSize;
+					this.spr.vboData[i] += this.spr.w; //this.tileSize;
 
-					this.vboData[i+2] = this.spriteCoord[(i/3)];
-					this.vboData[i+3] = this.spriteCoord[(i/3)+1];
+					this.spr.vboData[i+2] = this.spr.spriteCoord[(i/3)];
+					this.spr.vboData[i+3] = this.spr.spriteCoord[(i/3)+1];
 
-					this.vboData[i+4] += this.lightW; //TO-DO. Lightmap
+					this.spr.vboData[i+4] += this.lightW; //TO-DO. Lightmap
 				}
 
-				gl.bufferSubData(gl.ARRAY_BUFFER, S_FLOAT*this.vboData.length*(y*this.w+x), new Float32Array(this.vboData));
+				gl.bufferSubData(gl.ARRAY_BUFFER, S_FLOAT*this.spr.vboData.length*(y*this.w+x), new Float32Array(this.spr.vboData));
 			}
 
 			//Write Y Tilemap Data
-			for (var i=0; i<this.vboData.length; i+=6)
+			for (var i=0; i<this.spr.vboData.length; i+=6)
 			{
-				this.vboData[i+1] += this.tileSize;
-				this.vboData[i+5] += this.lightH; //To-Do. Lightmap
+				this.spr.vboData[i+1] += this.spr.h; //this.tileSize;
+				this.spr.vboData[i+5] += this.lightH; //To-Do. Lightmap
 			}
 		}
 	}
@@ -382,51 +411,38 @@ function Tilemap()
 	//Initializes Index Buffer Object. PARAMETERS: WebGL Context
 	this.initIBO = function (gl)
 	{
-		this.ibo = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, S_FLOAT*6*this.s, gl.STATIC_DRAW);
+		this.spr.initIBOEmpty(gl, S_FLOAT*6*this.s);
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.spr.ibo);
 
 		for (var a=0; a<this.s; a++)
 		{
-			for (var i=0; i<this.iboData.length; i++)
+			for (var i=0; i<this.spr.iboData.length; i++)
 			{
-				this.iboData[i] += 4;	
+				this.spr.iboData[i] += 4;	
 			}
 
-			gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, S_FLOAT*this.iboData.length*a, new Uint16Array(this.iboData));
+			gl.bufferSubData(gl.ELEMENT_ARRAY_BUFFER, S_FLOAT*this.spr.iboData.length*a, new Uint16Array(this.spr.iboData));
 		}
-	}
-
-	this.initMatrix = function () {
-		this.modelMatrix = mat4.create();
 	}
 
 	//Puts VBO Array Into Default State
 	this.VBOIdentity = function()
 	{
-		this.vboData = [
-			0,              this.tileSize,  this.spriteCoord[0], this.spriteCoord[1],  0,           this.lightH,
-			this.tileSize,  this.tileSize,  this.spriteCoord[2], this.spriteCoord[3],  this.lightW, this.lightH,
-			this.tileSize,  0,              this.spriteCoord[4], this.spriteCoord[5],  this.lightW, 0,
-			0,              0,              this.spriteCoord[6], this.spriteCoord[7],  0,           0
+		this.spr.vboData = [
+			0,           this.spr.h,  this.spr.spriteCoord[0], this.spr.spriteCoord[1],  0,           this.lightH,
+			this.spr.w,  this.spr.h,  this.spr.spriteCoord[2], this.spr.spriteCoord[3],  this.lightW, this.lightH,
+			this.spr.w,  0,           this.spr.spriteCoord[4], this.spr.spriteCoord[5],  this.lightW, 0,
+			0,           0,           this.spr.spriteCoord[6], this.spr.spriteCoord[7],  0,           0
 		];
 	}
 
 	//Puts IBO Array Into Default State
 	this.IBOIdentity = function()
 	{
-		this.iboData = [
+		this.spr.iboData = [
 			-4, -3, -2,
 			-2, -1, -4
 		];
-	}
-
-	//Set Buffers
-	this.setBuffers = function (gl, modelMUni) {
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-
-		gl.uniformMatrix4fv(modelMUni, false, this.modelMatrix);
 	}
 
 	//Renders Tilemap VBO On Screen

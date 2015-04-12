@@ -100,10 +100,14 @@ function IntiGL() {
 	fboObk = new Framebuffer();
 	fboObk.initFramebuffer(gl, canvas.width, canvas.height);
 
+	//Create Player Sprite
 	spr = new Sprite();
 	spr.createSprite(2/8*2, 2/8*2, 256, 16, 81);
 	spr.initSprite(gl);
 
+	mat4.translate(spr.modelMatrix, spr.modelMatrix, [(2/8*5)/as,0.25,0]);
+
+	//Create Tilemap
 	tmp = new Tilemap();
 	tmp.getTilemapData(res.tMap, res.bmb, 2/8);
 	tmp.initTilemap(gl);
@@ -239,7 +243,7 @@ function Render()
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
 	//Draw World
-	tmp.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
+	tmp.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
 	sth.updateAttributes(gl); //Updated World Attributes
 
 	gl.uniform2fv(gl.getUniformLocation(sth.program, "texOff"), [0,0]); //Set Sprite Offset
