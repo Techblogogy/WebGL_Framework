@@ -135,8 +135,8 @@ function IntiGL() {
 
 	//Create Text
 	intText = new Text();
-	intText.txt = "HelloWorldIamhereLOL";
-	intText.initText(10, res.bitFnt, 2/4);
+	intText.txt = "[] Hello World I'm here LOL";
+	intText.initText(14, res.bitFnt, 0.075);
 	intText.txtMap.initTilemap(gl);
 
 	//Set Frame Buffer Shader

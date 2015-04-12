@@ -19,7 +19,7 @@ function Text()
 		this.txt = this.txt.toUpperCase();
 
 		for (var i=0; i<this.txt.length; i++) {
-			this.txtVals[i] = this.txt.charCodeAt(i) - "A".charCodeAt(0) + 1;
+			this.txtVals[i] = this.txt.charCodeAt(i) - " ".charCodeAt(0) + 1;
 		}
 
 		this.txtMap = new Tilemap();
