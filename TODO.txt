@@ -1,0 +1,8 @@
+TO-DO List:
+
+- Build In Sprite Sheet Flipbook
+- Semi-hidden object rendering
+- Audio System
+- Tilemap Collision Detection
+- Adavanced Lighting
+- (Optional) Simple Physics (Gravity, Acceleration, etc.)
