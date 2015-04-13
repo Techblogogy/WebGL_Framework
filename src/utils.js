@@ -354,8 +354,12 @@ function Tilemap()
 	}
 
 	//Renders Tilemap VBO On Screen
-	this.drawTilemap = function()
+	this.drawTilemap = function(gl, shader)
 	{
+		this.spr.setBuffers(gl);
+		shader.updateAttributes(gl);
+
+		this.spr.updUniforms(gl);
 		gl.drawElements(gl.TRIANGLES, this.s*6*2, gl.UNSIGNED_SHORT, 0); //Draw Elements On Screen
 	}
 
@@ -387,11 +391,16 @@ function Sprite()
 
 	this.modelMatrix; //Sprite Model Matrix
 
+	this.offset = 0; //Sprite Sheet Horizontal Offset By Id
+
 	this.vbo; //WebGL Vertex Buffer Object
 	this.ibo; //WebGL Index Buffer Object
 
 	this.vboData = []; //Stores Vertex Data
-	this.iboData = []; //Stores Indisies
+	this.iboData = []; //Stores Indexes
+
+	this.modelUni; //Model Matrix Uniform
+	this.spriteUni; //Sprite Offset Uniform
 
 	//PARAMETERS: Width Of Sprite, Height Of Sprite, Sprite Sheet Size In Pixels, Tile Size In Pixels, Sprite Id On Tilemap
 	this.createSprite = function (width, height, sheetS, tileS, id) {
@@ -470,14 +479,31 @@ function Sprite()
 	}
 
 	//PARAMETERS: WebGL Context, Model Matrix Uniform
-	this.setBuffers = function (gl, modelMUni) {
+	this.setBuffers = function (gl) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ibo);
 
-		gl.uniformMatrix4fv(modelMUni, false, this.modelMatrix);
+		// gl.uniformMatrix4fv(this.modelUni, false, this.modelMatrix);
 	}
 
-	this.drawSprite = function () {
+	//Stores Unifroms Locations
+	this.setUniformsLocation = function (modelU, spriteU) {
+		this.modelUni = modelU;
+		this.spriteUni = spriteU;
+	}
+
+	//Updates Uniforms
+	this.updUniforms = function (gl) {
+		gl.uniformMatrix4fv(this.modelUni, false, this.modelMatrix);
+		gl.uniform2fv(this.spriteUni, [this.tileSizePx/this.sprsSizePx*this.offset,0]);
+	}
+
+	this.drawSprite = function (gl, shader) {
+		this.setBuffers(gl);
+		this.updUniforms(gl);
+
+		shader.updateAttributes(gl);
+
 		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 	}
 }

@@ -111,6 +111,16 @@ function IntiGL() {
 	fboObk = new Framebuffer();
 	fboObk.initFramebuffer(gl, canvas.width, canvas.height);
 
+	//Create Shader
+	sth = new Shader();
+	sth.setShaders(gl, res.vert1, res.frag1);
+	sth.makeProgram(gl);
+
+	//Create FBO Shader
+	fboSth = new Shader();
+	fboSth.setShaders(gl, res.vert2, res.frag2);
+	fboSth.makeProgram(gl);
+
 	//Create Player Sprite
 	spr = new Sprite();
 	spr.createSprite(2/8*2, 2/8*2, 256, 16, 81);
@@ -123,20 +133,11 @@ function IntiGL() {
 	tmp.getTilemapDataFile(res.tMap, res.bmb, 2/8);
 	tmp.initTilemap(gl);
 
-	//Create Shader
-	sth = new Shader();
-	sth.setShaders(gl, res.vert1, res.frag1);
-	sth.makeProgram(gl);
-
-	//Create FBO Shader
-	fboSth = new Shader();
-	fboSth.setShaders(gl, res.vert2, res.frag2);
-	fboSth.makeProgram(gl);
-
 	//Create Text
 	intText = new Text();
 	intText.txt = "[] Hello World I'm here LOL";
 	intText.initText(14, res.bitFnt, 0.075);
+
 	intText.txtMap.initTilemap(gl);
 
 	//Set Frame Buffer Shader
@@ -165,6 +166,10 @@ function IntiGL() {
 	sth.pushUniform(gl, "view"); //Camera Uniform
 	sth.pushUniform(gl, "tex"); //Texture Uniform
 	sth.pushUniform(gl, "texOff"); //Texture Offset Uniform
+
+	spr.setUniformsLocation(sth.uniforms.model, sth.uniforms.texOff);
+	tmp.spr.setUniformsLocation(sth.uniforms.model, sth.uniforms.texOff);
+	intText.txtMap.spr.setUniformsLocation(sth.uniforms.model, sth.uniforms.texOff);
 
 	//Create Camera
 	cam = new Camera();
@@ -223,9 +228,9 @@ function Update()
 		if (passTime >= duration) {
 			passTime = 0;
 
-			ind++;
+			spr.offset++;
 
-			if (ind >= 3) ind = 1;
+			if (spr.offset >= 3) spr.offset = 1;
 		} else {
 			passTime += dTime;
 		}
@@ -239,14 +244,14 @@ function Update()
 		if (passTime >= duration) {
 			passTime = 0;
 
-			ind++;
+			spr.offset++;
 
-			if (ind >= 3) ind = 1;
+			if (spr.offset >= 3) spr.offset = 1;
 		} else {
 			passTime += dTime;
 		}
 	} else {
-		ind = 0;
+		spr.offset = 0;
 		passTime = 500;
 	}
 }
@@ -261,28 +266,41 @@ function Render()
 	tx.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
 
 	//Draw World
-	tmp.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
-	sth.updateAttributes(gl); //Updated World Attributes
+	// tmp.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
+	// sth.updateAttributes(gl); //Updated World Attributes
 
-	gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
-	tmp.drawTilemap(); //World Draw Calls
+	// gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
+	// tmp.spr.setBuffers(gl);
+	// tmp.spr.updUniforms(gl);
+
+	// sth.updateAttributes(gl);
+	tmp.drawTilemap(gl, sth); //World Draw Calls
 
 	//Draw Player
-	spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
-	sth.updateAttributes(gl); //Updates Player Attributes
+	// spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
+	// sth.updateAttributes(gl); //Updates Player Attributes
 
-	gl.uniform2fv(sth.uniforms.texOff, [16/256*ind,0]); //Set Sprite Offset
-	spr.drawSprite(); //Sprite Draw Calls
+	// gl.uniform2fv(sth.uniforms.texOff, [16/256*ind,0]); //Set Sprite Offset
+	// spr.setBuffers(gl);
+	// spr.updUniforms(gl);
+
+	// sth.updateAttributes(gl);
+	spr.drawSprite(gl, sth); //Sprite Draw Calls
 
 	//Bind Font Sheet
 	fntTex.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
 
 	//Draw Text
-	intText.txtMap.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
-	sth.updateAttributes(gl); //Updated World Attributes
+	// intText.txtMap.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
+	// sth.updateAttributes(gl); //Updated World Attributes
 
-	gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
-	intText.txtMap.drawTilemap(); //World Draw Calls
+	// gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
+	// intText.txtMap.spr.setBuffers(gl);
+	// intText.txtMap.spr.updUniforms(gl);
+
+	// sth.updateAttributes(gl);
+
+	intText.txtMap.drawTilemap(gl, sth); //World Draw Calls
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer
 	sth.disableAttributes(gl); //Disable Shader Attributes
