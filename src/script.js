@@ -126,6 +126,8 @@ function IntiGL() {
 	spr.createSprite(2/8*2, 2/8*2, 256, 16, 81);
 	spr.initSprite(gl);
 
+	spr.animInit(500, 1, 1, 3);
+
 	mat4.translate(spr.modelMatrix, spr.modelMatrix, [(2/8*5)/as,0.25,0]);
 
 	//Create Tilemap
@@ -135,10 +137,12 @@ function IntiGL() {
 
 	//Create Text
 	intText = new Text();
-	intText.txt = "[] Hello World I'm here LOL";
+	intText.txt = "Hello LD32";
 	intText.initText(14, res.bitFnt, 0.075);
 
 	intText.txtMap.initTilemap(gl);
+
+	mat4.translate(intText.txtMap.spr.modelMatrix, intText.txtMap.spr.modelMatrix, [(2/8*5)/as,0.25,0]);
 
 	//Set Frame Buffer Shader
 	gl.useProgram(fboSth.program);
@@ -208,10 +212,6 @@ function GetTime()
 	lTime = cTime;
 }
 
-var ind = 0;
-var passTime = 500;
-var duration = 500;
-
 function Update()
 {
 	var t = (1/4)/36;
@@ -225,15 +225,7 @@ function Update()
 		cam.updateView();
 		gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
 
-		if (passTime >= duration) {
-			passTime = 0;
-
-			spr.offset++;
-
-			if (spr.offset >= 3) spr.offset = 1;
-		} else {
-			passTime += dTime;
-		}
+		spr.animTick();
 	} else if (kbrd.keys.A) {
 		cam.position[0] -= t;
 		mat4.translate(spr.modelMatrix,spr.modelMatrix, [-t/as,0,0]);
@@ -241,18 +233,10 @@ function Update()
 		cam.updateView();
 		gl.uniformMatrix4fv(sth.uniforms.view, false, cam.viewMatrix);
 
-		if (passTime >= duration) {
-			passTime = 0;
-
-			spr.offset++;
-
-			if (spr.offset >= 3) spr.offset = 1;
-		} else {
-			passTime += dTime;
-		}
+		spr.animTick();
 	} else {
 		spr.offset = 0;
-		passTime = 500;
+		spr.animTime = spr.animDuration;
 	}
 }
 
@@ -266,40 +250,14 @@ function Render()
 	tx.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
 
 	//Draw World
-	// tmp.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
-	// sth.updateAttributes(gl); //Updated World Attributes
-
-	// gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
-	// tmp.spr.setBuffers(gl);
-	// tmp.spr.updUniforms(gl);
-
-	// sth.updateAttributes(gl);
 	tmp.drawTilemap(gl, sth); //World Draw Calls
 
 	//Draw Player
-	// spr.setBuffers(gl, sth.uniforms.model); //Set Attributes 
-	// sth.updateAttributes(gl); //Updates Player Attributes
-
-	// gl.uniform2fv(sth.uniforms.texOff, [16/256*ind,0]); //Set Sprite Offset
-	// spr.setBuffers(gl);
-	// spr.updUniforms(gl);
-
-	// sth.updateAttributes(gl);
 	spr.drawSprite(gl, sth); //Sprite Draw Calls
 
 	//Bind Font Sheet
 	fntTex.bindTexture(gl, gl.TEXTURE0, 0, sth.uniforms.tex);
-
 	//Draw Text
-	// intText.txtMap.spr.setBuffers(gl, sth.uniforms.model); //Sets World Buffers
-	// sth.updateAttributes(gl); //Updated World Attributes
-
-	// gl.uniform2fv(sth.uniforms.texOff, [0,0]); //Set Sprite Offset
-	// intText.txtMap.spr.setBuffers(gl);
-	// intText.txtMap.spr.updUniforms(gl);
-
-	// sth.updateAttributes(gl);
-
 	intText.txtMap.drawTilemap(gl, sth); //World Draw Calls
 
 	gl.bindFramebuffer(gl.FRAMEBUFFER, null); //Remove Render Framebuffer

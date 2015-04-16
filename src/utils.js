@@ -402,6 +402,14 @@ function Sprite()
 	this.modelUni; //Model Matrix Uniform
 	this.spriteUni; //Sprite Offset Uniform
 
+	//Animation
+	this.animTime = 0; //Current Animation Time
+	this.animDuration = 0; //Animation Duration
+	this.spriteStep = 1; //Sprite Tile Step
+
+	this.minId = 0; //Minimum Sprite Id
+	this.maxId = 0; //Maximum Sprite Id
+
 	//PARAMETERS: Width Of Sprite, Height Of Sprite, Sprite Sheet Size In Pixels, Tile Size In Pixels, Sprite Id On Tilemap
 	this.createSprite = function (width, height, sheetS, tileS, id) {
 		this.w = width;
@@ -505,6 +513,29 @@ function Sprite()
 		shader.updateAttributes(gl);
 
 		gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+	}
+
+	//Animation
+
+	//Init Animation Variables. PARAMETRS: Animation Duration, Animation Step, Min Animation Id, Max Animation Id 
+	this.animInit = function (aDur, aStep, mnId, mxId) {
+		this.animDuration = aDur;
+		this.spriteStep = aStep;
+
+		this.minId = mnId;
+		this.maxId = mxId;
+	}
+
+	//Animation Logic
+	this.animTick = function () {
+		if (this.animTime >= this.animDuration) {
+			this.offset += this.spriteStep;
+			this.animTime = 0;
+
+			if (this.offset >= this.maxId) this.offset = this.minId;
+		} else {
+			this.animTime += dTime;
+		}
 	}
 }
 
