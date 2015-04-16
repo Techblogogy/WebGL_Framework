@@ -757,13 +757,19 @@ function SpriteSheet() {
 
 //Resource Managing Class
 function ResourceManager(rcsComp) {
-	var resources = rcsComp; //Reosurce Storage Object
+	this.resources = rcsComp; //Reosurce Storage Object
 
 	var rcsLoaded = 0; //Number Of Resources Loaded
 	var rcsSize = 0; //Number Of Resources
 
+	this.clk; //OnLoad Done Callback
+	this.rcs; //Resource 
+
+	this.rcsReq; //Resource Request
+
 	//Load Texture And Shaders. PARAMETERS: Callback called on finnish
 	this.getResources = function (callback) {
+		this.clk = callback;
 		this.loadResources(callback);
 	}
 
@@ -772,46 +778,82 @@ function ResourceManager(rcsComp) {
 		rcsLoaded = 0;
 		rcsSize = 0;
 
-		for (var rcs in resources) rcsSize++; //Calculate Size Of Resources
+		for (var rcs in this.resources) rcsSize++; //Calculate Size Of Resources
 
-		for (var rcs in resources) {
-			this.loadResource(resources[rcs], callback); //Load Resource
+		for (var rcs in this.resources) {
+			this.rcs = this.resources[rcs]; //Set Resource
+			this.loadResource(); //Load Resource
 		}
 	}
 
 	//Load Specific Resource. PARAMETERS: Resource, Callback
-	this.loadResource = function (rcs, clk) {
-		var rcsReq; //Request For Resource
-
-		//Set Resource Request Type
-		switch (rcs.type) {
+	this.loadResource = function () {
+		switch (this.rcs.type) {
 			case "image":
-				rcsReq = new Image(); //Set Request To Image
-				rcsReq.src = rcs.src; //Set Image Path
+				this.loadImage();
 			break;
 
 			case "text":
-				rcsReq = new XMLHttpRequest(); //Set Request To Text
-				rcsReq.open("GET", rcs.src); //Set Path To Text
-				rcsReq.send(null); //Send Request
+				this.loadText();
+			break;
+
+			case "audio":
+				this.loadAudio();
 			break;
 		}
+	}
 
-		rcsReq.rcs = rcs; //Set Resource For OnLoad Function
-		rcsReq.clk = clk; //Set Callback For OnLoad Function
-		rcsReq.onload = function () { //Set Loaded Resource
-			switch (this.rcs.type) {
-				case "image":
-					this.rcs.img = this;
-				break;
+	//Image Loading Instructions
+	this.loadImage = function () {
+		this.rcsReq = new Image(); //Set Request To Image
+		this.rcsReq.src = this.rcs.src; //Set Image Path
 
-				case "text":
-					this.rcs.txt = this.responseText;
-				break;
-			}
+		this.setLoadData();
 
-			rcsLoaded++;
-			if (rcsLoaded == rcsSize) this.clk();
+		this.rcsReq.onload = function () { //Set Loaded Resource
+			this.rcs.img = this;
+			this.loadEvent();
 		};
+	}
+
+	//Text Loading Instructions
+	this.loadText = function () {
+		this.rcsReq = new XMLHttpRequest(); //Set Request To Text
+		this.rcsReq.open("GET", this.rcs.src); //Set Path To Text
+		this.rcsReq.send(null); //Send Request
+
+		this.setLoadData();
+
+		this.rcsReq.onload = function () { //Set Loaded Resource
+			this.rcs.txt = this.responseText;
+			this.loadEvent();
+		};
+	}
+
+	//Audio Loading Instructions
+	this.loadAudio = function () {
+		this.rcsReq = new Audio();
+		this.rcsReq.src = this.rcs.src;
+
+		this.setLoadData();
+
+		this.rcsReq.onloadeddata = function () { //Set Loaded Resource
+			this.rcs.aud = this;
+			this.loadEvent();
+		};
+	}
+
+	//Sets Resources Data In Load Function
+	this.setLoadData = function () {
+		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
+
+		this.rcsReq.clk = this.clk; //Set Callback For OnLoad Function
+		this.rcsReq.loadEvent = this.loadEvent; //Set 
+	}
+
+	//Logic Tick After Resource Load
+	this.loadEvent = function () {
+		rcsLoaded++;
+		if (rcsLoaded == rcsSize) this.clk();
 	}
 }

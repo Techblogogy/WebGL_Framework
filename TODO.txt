@@ -1,6 +1,5 @@
 
 TO-DO List:
-- Build In Sprite Sheet Flipbook
 - Audio System
 - Tilemap Collision Detection
 - Adavanced Lighting
@@ -8,3 +7,4 @@ TO-DO List:
 
 Done List:
 - Semi-hidden object rendering (Semi-done)
+- Sprite Sheet Flipbook wrapper

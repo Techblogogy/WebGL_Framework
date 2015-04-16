@@ -194,6 +194,19 @@ function IntiGL() {
 
 	sth.enableAttributes(gl); //Enable Main Shader Attributes
 
+
+
+	/* !!!! Temporary Audio Test !!!! */
+
+	var aud = new Audio();
+	aud.src = "./res/sound/tst.wav";
+	aud.onloadeddata = function () {
+		console.log("Loaded");
+		//aud.play();
+	}
+
+	// console.log(aud);
+
 	window.requestAnimationFrame(Tick); //Calls Main Loop
 }
 
