@@ -47,6 +47,11 @@ var res = {
 	bitFnt: {
 		type: "image",
 		src: "./res/textures/BMB/FontSheet.png"
+	},
+
+	mus: {
+		type: "audio",
+		src: "./res/sound/tst.wav"
 	}
 };
 
@@ -198,12 +203,12 @@ function IntiGL() {
 
 	/* !!!! Temporary Audio Test !!!! */
 
-	var aud = new Audio();
-	aud.src = "./res/sound/tst.wav";
-	aud.onloadeddata = function () {
-		console.log("Loaded");
-		//aud.play();
-	}
+	// var aud = new Audio();
+	// aud.src = "./res/sound/tst.wav";
+	// aud.onloadeddata = function () {
+	// 	console.log("Loaded");
+	// 	//aud.play();
+	// }
 
 	// console.log(aud);
 

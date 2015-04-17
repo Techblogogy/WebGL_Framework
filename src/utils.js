@@ -769,12 +769,12 @@ function ResourceManager(rcsComp) {
 
 	//Load Texture And Shaders. PARAMETERS: Callback called on finnish
 	this.getResources = function (callback) {
-		this.clk = callback;
-		this.loadResources(callback);
+		this.setLoadData(callback);
+		this.loadResources();
 	}
 
 	//Load Resources From The List. PARAMETERS: Callback called on finnish
-	this.loadResources = function (callback) {
+	this.loadResources = function () {
 		rcsLoaded = 0;
 		rcsSize = 0;
 
@@ -808,7 +808,8 @@ function ResourceManager(rcsComp) {
 		this.rcsReq = new Image(); //Set Request To Image
 		this.rcsReq.src = this.rcs.src; //Set Image Path
 
-		this.setLoadData();
+		// this.setLoadData();
+		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
 
 		this.rcsReq.onload = function () { //Set Loaded Resource
 			this.rcs.img = this;
@@ -822,7 +823,8 @@ function ResourceManager(rcsComp) {
 		this.rcsReq.open("GET", this.rcs.src); //Set Path To Text
 		this.rcsReq.send(null); //Send Request
 
-		this.setLoadData();
+		// this.setLoadData();
+		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
 
 		this.rcsReq.onload = function () { //Set Loaded Resource
 			this.rcs.txt = this.responseText;
@@ -835,29 +837,28 @@ function ResourceManager(rcsComp) {
 		this.rcsReq = new Audio();
 		this.rcsReq.src = this.rcs.src;
 
-		this.setLoadData();
+		// this.setLoadData();
+		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
 
 		this.rcsReq.onloadeddata = function () { //Set Loaded Resource
 			this.rcs.aud = this;
-			//this.loadEvent();
-
-			console.log("I did it!");
+			this.loadEvent();
 		};
 	}
 
 	//Sets Resources Data In Load Function
-	this.setLoadData = function () {
-		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
+	this.setLoadData = function (callback) {
+		// this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
+
+		this.clk = callback; //Sets Callback
 
 		this.rcsReq.clk = this.clk; //Set Callback For OnLoad Function
-		this.rcsReq.loadEvent = this.loadEvent; //Set 
+		this.rcsReq.loadEvent = this.loadEvent; //Set Load Tick
 	}
 
 	//Logic Tick After Resource Load
 	this.loadEvent = function () {
-		//console.log(rcsLoaded + "/" + rcsSize);
-
-		rcsLoaded++;
-		if (rcsLoaded == rcsSize) this.clk();
+		rcsLoaded++; //Increment Resource Count
+		if (rcsLoaded == rcsSize) this.clk(); //Call Callback When Everything Is Loaded
 	}
 }
