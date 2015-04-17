@@ -839,7 +839,9 @@ function ResourceManager(rcsComp) {
 
 		this.rcsReq.onloadeddata = function () { //Set Loaded Resource
 			this.rcs.aud = this;
-			this.loadEvent();
+			//this.loadEvent();
+
+			console.log("I did it!");
 		};
 	}
 
@@ -853,7 +855,7 @@ function ResourceManager(rcsComp) {
 
 	//Logic Tick After Resource Load
 	this.loadEvent = function () {
-		console.log(rcsLoaded + "/" + rcsSize);
+		//console.log(rcsLoaded + "/" + rcsSize);
 
 		rcsLoaded++;
 		if (rcsLoaded == rcsSize) this.clk();
