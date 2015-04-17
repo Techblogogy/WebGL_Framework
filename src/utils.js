@@ -853,6 +853,8 @@ function ResourceManager(rcsComp) {
 
 	//Logic Tick After Resource Load
 	this.loadEvent = function () {
+		console.log(rcsLoaded + "/" + rcsSize);
+
 		rcsLoaded++;
 		if (rcsLoaded == rcsSize) this.clk();
 	}
