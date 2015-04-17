@@ -26,7 +26,7 @@ var res = {
 
 	pk: {
 		type: "image",
-		src: "./res/textures/spritePk.png"
+		src: "./res/textures/SpritePk.png"
 	},
 
 	lmp: {
