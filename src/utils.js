@@ -1,5 +1,34 @@
 var S_FLOAT = 4;
 
+function LoadScreen() 
+{
+	this.container;
+
+	this.progressBar; //HTML Loading Progress Bar
+	this.logo; //HTML Loading Logo
+	this.text; //HTML Text Element
+
+	//Initializes Loading Screen
+	this.initLScreen = function () {
+		this.createContainer(); //Makes A Loading Screen Container
+		this.createBar(); //Make A Progress Bar
+
+		document.body.appendChild(this.container); //Add Screen Div To Document
+		this.container.appendChild(this.progressBar);
+	}
+
+	//Creates Container
+	this.createContainer = function () {
+		this.container = document.createElement("div");
+		this.container.id = "loadDiv";
+	}
+
+	this.createBar = function () {
+		this.progressBar = document.createElement("progress");
+		this.progressBar.id = "loadingBar";
+	}
+}
+
 //Text Wrapper Class
 function Text()
 {
@@ -769,7 +798,7 @@ function ResourceManager(rcsComp) {
 
 	//Load Texture And Shaders. PARAMETERS: Callback called on finnish
 	this.getResources = function (callback) {
-		this.setLoadData(callback);
+		this.clk = callback;
 		this.loadResources();
 	}
 
@@ -779,6 +808,8 @@ function ResourceManager(rcsComp) {
 		rcsSize = 0;
 
 		for (var rcs in this.resources) rcsSize++; //Calculate Size Of Resources
+
+		prgBar.max = rcsSize; //Temp Thing
 
 		for (var rcs in this.resources) {
 			this.rcs = this.resources[rcs]; //Set Resource
@@ -808,8 +839,7 @@ function ResourceManager(rcsComp) {
 		this.rcsReq = new Image(); //Set Request To Image
 		this.rcsReq.src = this.rcs.src; //Set Image Path
 
-		// this.setLoadData();
-		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
+		this.setLoadData();
 
 		this.rcsReq.onload = function () { //Set Loaded Resource
 			this.rcs.img = this;
@@ -823,8 +853,7 @@ function ResourceManager(rcsComp) {
 		this.rcsReq.open("GET", this.rcs.src); //Set Path To Text
 		this.rcsReq.send(null); //Send Request
 
-		// this.setLoadData();
-		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
+		this.setLoadData();
 
 		this.rcsReq.onload = function () { //Set Loaded Resource
 			this.rcs.txt = this.responseText;
@@ -837,8 +866,7 @@ function ResourceManager(rcsComp) {
 		this.rcsReq = new Audio();
 		this.rcsReq.src = this.rcs.src;
 
-		// this.setLoadData();
-		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
+		this.setLoadData();
 
 		this.rcsReq.onloadeddata = function () { //Set Loaded Resource
 			this.rcs.aud = this;
@@ -848,9 +876,7 @@ function ResourceManager(rcsComp) {
 
 	//Sets Resources Data In Load Function
 	this.setLoadData = function (callback) {
-		// this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
-
-		this.clk = callback; //Sets Callback
+		this.rcsReq.rcs = this.rcs; //Set Resource For OnLoad Function
 
 		this.rcsReq.clk = this.clk; //Set Callback For OnLoad Function
 		this.rcsReq.loadEvent = this.loadEvent; //Set Load Tick
@@ -859,6 +885,19 @@ function ResourceManager(rcsComp) {
 	//Logic Tick After Resource Load
 	this.loadEvent = function () {
 		rcsLoaded++; //Increment Resource Count
+
+		prgBar.value = rcsLoaded; //Temp Thing
+
 		if (rcsLoaded == rcsSize) this.clk(); //Call Callback When Everything Is Loaded
+	}
+
+	//Get Ammount Of Resources
+	this.getSize = function () {
+		return rcsSize;
+	}
+
+	//Get Ammount Of Resources Loaded
+	this.getLoaded = function () {
+		return rcsLoaded;
 	}
 }

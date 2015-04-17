@@ -58,6 +58,8 @@ var res = {
 var rm = new ResourceManager(res);
 var ts = new SpriteSheet();
 
+var prgBar; //Progress Bar Element
+
 var gl; //WebGL Context
 var canvas; //HTML5 Canvas
 
@@ -88,6 +90,11 @@ var fntTex;
 var tx;
 
 window.onload = function () {
+	var lds = new LoadScreen();
+	lds.initLScreen(1024, 576);
+
+	prgBar = document.getElementById("loadedBar");
+
 	rm.getResources(IntiGL);
 }
 
@@ -198,8 +205,6 @@ function IntiGL() {
 	GetTime(); //Calculate Time
 
 	sth.enableAttributes(gl); //Enable Main Shader Attributes
-
-
 
 	/* !!!! Temporary Audio Test !!!! */
 
