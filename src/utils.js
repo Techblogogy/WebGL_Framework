@@ -12,9 +12,11 @@ function LoadScreen()
 	this.initLScreen = function () {
 		this.createContainer(); //Makes A Loading Screen Container
 		this.createBar(); //Make A Progress Bar
+		this.createLogo();
 
 		document.body.appendChild(this.container); //Add Screen Div To Document
-		this.container.appendChild(this.progressBar);
+		this.container.appendChild(this.progressBar); //Add Progress Bar To Container
+		this.container.appendChild(this.logo); //Add Progress Bar To Container
 	}
 
 	//Creates Container
@@ -23,9 +25,16 @@ function LoadScreen()
 		this.container.id = "loadDiv";
 	}
 
+	//Creates Progress Bar
 	this.createBar = function () {
 		this.progressBar = document.createElement("progress");
 		this.progressBar.id = "loadingBar";
+	}
+
+	//Creates Image Logo
+	this.createLogo = function () {
+		this.logo = document.createElement("image");
+		this.logo.src = "./res/logo.png";
 	}
 }
 
@@ -809,7 +818,7 @@ function ResourceManager(rcsComp) {
 
 		for (var rcs in this.resources) rcsSize++; //Calculate Size Of Resources
 
-		prgBar.max = rcsSize; //Temp Thing
+		// prgBar.max = rcsSize; //Temp Thing
 
 		for (var rcs in this.resources) {
 			this.rcs = this.resources[rcs]; //Set Resource
@@ -886,7 +895,7 @@ function ResourceManager(rcsComp) {
 	this.loadEvent = function () {
 		rcsLoaded++; //Increment Resource Count
 
-		prgBar.value = rcsLoaded; //Temp Thing
+		// prgBar.value = rcsLoaded; //Temp Thing
 
 		if (rcsLoaded == rcsSize) this.clk(); //Call Callback When Everything Is Loaded
 	}

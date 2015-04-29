@@ -265,7 +265,7 @@ function Update()
 
 function Render()
 {	
-	//Draw Scene To Framebuffer
+	//Draw Scene To Framebufddfer
 	gl.bindFramebuffer(gl.FRAMEBUFFER, fboObk.fbo); //Set Render Framebuffer
 	gl.clear(gl.COLOR_BUFFER_BIT); //Clear Screen
 
