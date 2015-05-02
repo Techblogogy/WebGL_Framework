@@ -1,0 +1,1 @@
+var S_FLOAT = 4;
